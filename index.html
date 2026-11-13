@@ -845,6 +845,65 @@
             <!-- ADMIN DASHBOARD -->
             <template x-if="currentUser.role === 'admin'">
                 <div class="space-y-8">
+                    <!-- PROFESSIONAL ADMIN OVERVIEW -->
+                    <div class="rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-6 shadow-2xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                            <div><p class="text-xs uppercase tracking-[.2em] text-cyan-300 font-bold">VIIT Management Suite</p><h2 class="text-2xl md:text-3xl font-black text-white mt-1">Admin Dashboard</h2><p class="text-sm text-slate-400 mt-1">Institute overview, student services and academic operations</p></div>
+                            <span class="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-xs font-bold text-emerald-300"><i class="fa-solid fa-shield-halved"></i> Administrator workspace</span>
+                        </div>
+                        <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                            <div class="rounded-xl bg-slate-950/70 border border-slate-700 p-4"><p class="text-xs text-slate-400">Total Students</p><p class="text-3xl font-black text-cyan-300 mt-1" x-text="registeredStudents.length"></p><p class="text-[11px] text-slate-500 mt-1">Registered learners</p></div>
+                            <div class="rounded-xl bg-slate-950/70 border border-slate-700 p-4"><p class="text-xs text-slate-400">Total Staff</p><p class="text-3xl font-black text-violet-300 mt-1" x-text="staffAccounts.length"></p><p class="text-[11px] text-slate-500 mt-1">Staff accounts</p></div>
+                            <div class="rounded-xl bg-slate-950/70 border border-slate-700 p-4"><p class="text-xs text-slate-400">Active Programs</p><p class="text-3xl font-black text-amber-300 mt-1" x-text="courses.length"></p><p class="text-[11px] text-slate-500 mt-1">Course catalogue</p></div>
+                            <div class="rounded-xl bg-slate-950/70 border border-slate-700 p-4"><p class="text-xs text-slate-400">Announcements</p><p class="text-3xl font-black text-emerald-300 mt-1" x-text="announcements.length"></p><p class="text-[11px] text-slate-500 mt-1">Published notices</p></div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+                            <a href="#viit-accounts" class="rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-200 text-xs font-bold p-3 text-center"><i class="fa-solid fa-user-plus mr-1"></i> Accounts</a>
+                            <a href="#viit-attendance" class="rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-200 text-xs font-bold p-3 text-center"><i class="fa-solid fa-calendar-check mr-1"></i> Attendance</a>
+                            <a href="#viit-fees" class="rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 text-xs font-bold p-3 text-center"><i class="fa-solid fa-indian-rupee-sign mr-1"></i> Fees</a>
+                            <a href="#viit-announcements" class="rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200 text-xs font-bold p-3 text-center"><i class="fa-solid fa-bullhorn mr-1"></i> Notices</a>
+                        </div>
+                    </div>
+
+                    <!-- ATTENDANCE MANAGEMENT -->
+                    <div id="viit-attendance" class="bg-brand-card border border-violet-500/25 rounded-2xl p-6 shadow-xl space-y-4">
+                        <div class="flex items-center justify-between flex-wrap gap-2"><div><h3 class="text-lg font-extrabold text-white"><i class="fa-solid fa-calendar-check text-violet-300 mr-2"></i>Attendance Management</h3><p class="text-xs text-slate-400 mt-1">Record and review daily student attendance</p></div><span class="text-xs rounded-full bg-violet-500/10 text-violet-200 px-3 py-1" x-text="attendanceRecords.length + ' records'"></span></div>
+                        <form @submit.prevent="markAttendance()" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <select required x-model="attendanceForm.studentEmail" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="">Select student</option><template x-for="st in registeredStudents" :key="st.email"><option :value="st.email" x-text="st.name + ' — ' + (st.studentId || st.email)"></option></template></select>
+                            <input required type="date" x-model="attendanceForm.date" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-white">
+                            <select x-model="attendanceForm.status" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option>Present</option><option>Absent</option><option>Late</option><option>Leave</option></select>
+                            <input x-model="attendanceForm.note" placeholder="Note (optional)" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm">
+                            <button class="rounded-lg bg-violet-500 hover:bg-violet-400 text-white font-bold text-sm p-2.5">Save Attendance</button>
+                        </form>
+                        <div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="text-slate-400 uppercase border-b border-slate-700"><tr><th class="py-3 px-2">Date</th><th class="py-3 px-2">Student</th><th class="py-3 px-2">Status</th><th class="py-3 px-2">Note</th></tr></thead><tbody class="divide-y divide-slate-800"><template x-for="(a,i) in attendanceRecords.slice().reverse().slice(0,12)" :key="a.id"><tr><td class="py-3 px-2 text-slate-300" x-text="a.date"></td><td class="py-3 px-2 text-white" x-text="a.studentName"></td><td class="py-3 px-2" :class="a.status==='Present'?'text-emerald-300':a.status==='Absent'?'text-rose-300':'text-amber-300'" x-text="a.status"></td><td class="py-3 px-2 text-slate-400" x-text="a.note || '—'"></td></tr></template><tr x-show="attendanceRecords.length===0"><td colspan="4" class="py-4 text-center text-slate-500">No attendance records yet.</td></tr></tbody></table></div>
+                    </div>
+
+                    <!-- FEE MANAGEMENT -->
+                    <div id="viit-fees" class="bg-brand-card border border-amber-500/25 rounded-2xl p-6 shadow-xl space-y-4">
+                        <div class="flex items-center justify-between flex-wrap gap-2"><div><h3 class="text-lg font-extrabold text-white"><i class="fa-solid fa-indian-rupee-sign text-amber-300 mr-2"></i>Fee Management</h3><p class="text-xs text-slate-400 mt-1">Track fee payments and outstanding balances (manual records)</p></div><div class="text-right"><p class="text-[11px] text-slate-400">Recorded payments</p><p class="text-xl font-black text-emerald-300" x-text="'₹' + feeRecords.filter(f=>f.status==='Paid').reduce((sum,f)=>sum+Number(f.amount||0),0).toLocaleString('en-IN')"></p></div></div>
+                        <form @submit.prevent="addFeeRecord()" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <select required x-model="feeForm.studentEmail" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="">Select student</option><template x-for="st in registeredStudents" :key="st.email"><option :value="st.email" x-text="st.name"></option></template></select>
+                            <input required type="number" min="1" step="1" x-model.number="feeForm.amount" placeholder="Amount (₹)" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm">
+                            <input required type="date" x-model="feeForm.date" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-white">
+                            <select x-model="feeForm.status" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option>Paid</option><option>Pending</option><option>Partially Paid</option></select>
+                            <button class="rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm p-2.5">Add Fee Record</button>
+                        </form>
+                        <div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="text-slate-400 uppercase border-b border-slate-700"><tr><th class="py-3 px-2">Date</th><th class="py-3 px-2">Student</th><th class="py-3 px-2">Amount</th><th class="py-3 px-2">Status</th></tr></thead><tbody class="divide-y divide-slate-800"><template x-for="f in feeRecords.slice().reverse().slice(0,12)" :key="f.id"><tr><td class="py-3 px-2 text-slate-300" x-text="f.date"></td><td class="py-3 px-2 text-white" x-text="f.studentName"></td><td class="py-3 px-2 text-amber-300 font-bold" x-text="'₹'+Number(f.amount).toLocaleString('en-IN')"></td><td class="py-3 px-2" :class="f.status==='Paid'?'text-emerald-300':'text-amber-300'" x-text="f.status"></td></tr></template><tr x-show="feeRecords.length===0"><td colspan="4" class="py-4 text-center text-slate-500">No fee records yet.</td></tr></tbody></table></div>
+                    </div>
+
+                    <!-- ANNOUNCEMENTS -->
+                    <div id="viit-announcements" class="bg-brand-card border border-emerald-500/25 rounded-2xl p-6 shadow-xl space-y-4">
+                        <div><h3 class="text-lg font-extrabold text-white"><i class="fa-solid fa-bullhorn text-emerald-300 mr-2"></i>Announcements</h3><p class="text-xs text-slate-400 mt-1">Publish institute notices for students and staff</p></div>
+                        <form @submit.prevent="publishAnnouncement()" class="grid grid-cols-1 md:grid-cols-4 gap-3"><input required x-model="announcementForm.title" placeholder="Announcement title" class="md:col-span-2 bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><select x-model="announcementForm.audience" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option>Everyone</option><option>Students</option><option>Staff</option></select><button class="rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm p-2.5">Publish Notice</button><textarea required x-model="announcementForm.message" rows="2" placeholder="Write announcement details..." class="md:col-span-4 bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm"></textarea></form>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><template x-for="a in announcements.slice().reverse()" :key="a.id"><div class="rounded-xl bg-slate-950 border border-slate-700 p-4"><div class="flex justify-between gap-2"><h4 class="font-bold text-white" x-text="a.title"></h4><span class="text-[10px] text-emerald-300" x-text="a.audience"></span></div><p class="text-xs text-slate-300 mt-2 whitespace-pre-line" x-text="a.message"></p><p class="text-[10px] text-slate-500 mt-3" x-text="a.date"></p><button @click="deleteAnnouncement(a.id)" class="text-[10px] text-rose-300 mt-2 hover:text-rose-200">Delete notice</button></div></template><p x-show="announcements.length===0" class="text-xs text-slate-500">No announcements published yet.</p></div>
+                    </div>
+
+                    <!-- ACTIVITY LOG -->
+                    <div class="bg-brand-card border border-slate-700 rounded-2xl p-6 shadow-xl space-y-3">
+                        <div class="flex items-center justify-between"><div><h3 class="text-lg font-extrabold text-white"><i class="fa-solid fa-clock-rotate-left text-cyan-300 mr-2"></i>Activity Log</h3><p class="text-xs text-slate-400 mt-1">Recent actions recorded in this browser prototype</p></div><span class="text-xs text-slate-500" x-text="activityLogs.length + ' events'"></span></div>
+                        <div class="space-y-2"><template x-for="log in activityLogs.slice().reverse().slice(0,10)" :key="log.id"><div class="flex items-start gap-3 rounded-lg bg-slate-950/70 p-3"><i class="fa-solid fa-circle-dot text-cyan-400 mt-1 text-xs"></i><div class="min-w-0"><p class="text-xs text-slate-200" x-text="log.message"></p><p class="text-[10px] text-slate-500 mt-1" x-text="log.time"></p></div></div></template><p x-show="activityLogs.length===0" class="text-xs text-slate-500">No activity recorded yet.</p></div>
+                    </div>
+
                     <!-- ADMIN CONTROL CENTRE: ACCOUNTS, GUIDES & TEST SCHEDULES -->
                     <div class="bg-brand-card border border-amber-500/30 rounded-2xl p-6 shadow-xl space-y-5">
                         <div><h3 class="text-lg font-extrabold text-white"><i class="fa-solid fa-user-shield text-amber-400 mr-2"></i>Admin Account & Academic Controls</h3><p class="text-xs text-slate-400 mt-1">Only an authenticated Admin should issue credentials, publish guides and schedule assessments.</p></div>
@@ -1242,6 +1301,10 @@
                 questionBanks: {},
                 quizResults: [],
                 userAccounts: [], staffAccounts: [], studyGuides: [], quizSchedules: [],
+                attendanceRecords: [], feeRecords: [], announcements: [], activityLogs: [],
+                attendanceForm: {studentEmail:'',date:new Date().toISOString().slice(0,10),status:'Present',note:''},
+                feeForm: {studentEmail:'',amount:'',date:new Date().toISOString().slice(0,10),status:'Paid'},
+                announcementForm: {title:'',message:'',audience:'Everyone'},
                 guideView: 'grid', activeGuide: null,
                 adminAccount: {name:'',email:'',role:'student',loginId:'',password:'',course:defaultCourses[0].name},
                 lastIssuedCredential: null,
@@ -1310,6 +1373,10 @@
                         this.staffAccounts = JSON.parse(localStorage.getItem('viit_staff_accounts_v2') || '[]');
                         this.studyGuides = JSON.parse(localStorage.getItem('viit_study_guides_v2') || '[]');
                         this.quizSchedules = JSON.parse(localStorage.getItem('viit_quiz_schedules_v2') || '[]');
+                        this.attendanceRecords = JSON.parse(localStorage.getItem('viit_attendance_v1') || '[]');
+                        this.feeRecords = JSON.parse(localStorage.getItem('viit_fee_records_v1') || '[]');
+                        this.announcements = JSON.parse(localStorage.getItem('viit_announcements_v1') || '[]');
+                        this.activityLogs = JSON.parse(localStorage.getItem('viit_activity_logs_v1') || '[]');
                         if (!this.userAccounts.some(a=>a.role==='admin')) this.userAccounts.push({name:'VIIT Administrator',role:'admin',email:'jaiswar.family.1@gmail.com',loginId:'VIIT-ADMIN',password:'admin123'});
                         this.registeredStudents.forEach((st,i)=>{ if(!this.userAccounts.some(a=>a.email===st.email)) this.userAccounts.push({name:st.name,role:'student',email:st.email,loginId:st.studentId||'VIIT-'+(1001+i),password:i===0?'student123':'student123',course:st.course,studentId:st.studentId}); });
                         if (!this.staffAccounts.some(a=>a.email==='ajit.mentor@viit.edu')) this.staffAccounts.push({name:'Mr. Ajit (Senior Mentor)',role:'staff',email:'ajit.mentor@viit.edu',loginId:'VIIT-STAFF-001',password:'staff123'});
@@ -1333,8 +1400,37 @@
                         localStorage.setItem('viit_staff_accounts_v2', JSON.stringify(this.staffAccounts));
                         localStorage.setItem('viit_study_guides_v2', JSON.stringify(this.studyGuides));
                         localStorage.setItem('viit_quiz_schedules_v2', JSON.stringify(this.quizSchedules));
+                        localStorage.setItem('viit_attendance_v1', JSON.stringify(this.attendanceRecords));
+                        localStorage.setItem('viit_fee_records_v1', JSON.stringify(this.feeRecords));
+                        localStorage.setItem('viit_announcements_v1', JSON.stringify(this.announcements));
+                        localStorage.setItem('viit_activity_logs_v1', JSON.stringify(this.activityLogs));
                     } catch (e) {}
                 },
+                logActivity(message) {
+                    this.activityLogs.push({id:'LOG-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),message,time:new Date().toLocaleString('en-IN')});
+                    if(this.activityLogs.length>100)this.activityLogs=this.activityLogs.slice(-100);
+                },
+                markAttendance() {
+                    const st=this.registeredStudents.find(x=>x.email===this.attendanceForm.studentEmail);
+                    if(!st){this.showToast('Please select a student.','error');return;}
+                    const date=this.attendanceForm.date;
+                    const existing=this.attendanceRecords.findIndex(x=>x.studentEmail===st.email&&x.date===date);
+                    const record={id:'ATT-'+Date.now(),studentEmail:st.email,studentName:st.name,date,status:this.attendanceForm.status,note:this.attendanceForm.note.trim()};
+                    if(existing>=0)this.attendanceRecords.splice(existing,1,record);else this.attendanceRecords.push(record);
+                    this.logActivity('Attendance marked '+record.status+' for '+st.name+' on '+date+'.');this.saveState();this.attendanceForm.note='';this.showToast('Attendance saved.');
+                },
+                addFeeRecord() {
+                    const st=this.registeredStudents.find(x=>x.email===this.feeForm.studentEmail);
+                    if(!st||!Number(this.feeForm.amount)||Number(this.feeForm.amount)<=0){this.showToast('Select a student and enter a valid amount.','error');return;}
+                    const record={id:'FEE-'+Date.now(),studentEmail:st.email,studentName:st.name,amount:Number(this.feeForm.amount),date:this.feeForm.date,status:this.feeForm.status};
+                    this.feeRecords.push(record);this.logActivity('Fee record added for '+st.name+': ₹'+record.amount+' ('+record.status+').');this.saveState();this.feeForm.amount='';this.showToast('Fee record saved.');
+                },
+                publishAnnouncement() {
+                    const f=this.announcementForm;if(!f.title.trim()||!f.message.trim()){this.showToast('Enter an announcement title and message.','error');return;}
+                    this.announcements.push({id:'NOTICE-'+Date.now(),title:f.title.trim(),message:f.message.trim(),audience:f.audience,date:new Date().toLocaleString('en-IN')});
+                    this.logActivity('Announcement published: '+f.title.trim()+'.');this.saveState();this.announcementForm={title:'',message:'',audience:'Everyone'};this.showToast('Announcement published.');
+                },
+                deleteAnnouncement(id) { const a=this.announcements.find(x=>x.id===id);this.announcements=this.announcements.filter(x=>x.id!==id);if(a)this.logActivity('Announcement deleted: '+a.title+'.');this.saveState();this.showToast('Announcement deleted.'); },
                 get myStudyGuides() { return this.studyGuides.filter(g=>g.program===this.currentUser.course); },
                 adminCreateAccount() {
                     const f=this.adminAccount; const list=f.role==='staff'?this.staffAccounts:this.userAccounts;
@@ -1344,6 +1440,7 @@
                     list.push(account);
                     if(f.role==='student') this.registeredStudents.unshift({...account,phone:'',paymentLabel:'Admin admission',payableFee:0});
                     this.lastIssuedCredential={name:account.name,role:account.role,loginId:account.loginId,password:account.password};
+                    this.logActivity('New '+account.role+' account created for '+account.name+'.');
                     this.saveState(); this.adminAccount={name:'',email:'',role:'student',loginId:'',password:'',course:this.courses[0].name};
                     this.showToast('Account created. Credentials are displayed in the Admin-only panel below.');
                 },
@@ -1356,12 +1453,12 @@
                 async uploadStudyGuide(event) {
                     const f=this.guideUpload.file; if(!f||f.type!=='application/pdf'){this.showToast('Please choose a PDF file.','error');return;}
                     if(f.size>4500000){this.showToast('PDF is larger than the browser prototype storage limit (4.5 MB).','error');return;}
-                    const reader=new FileReader(); reader.onload=()=>{this.studyGuides.unshift({id:'GUIDE-'+Date.now(),program:this.guideUpload.program,module:this.guideUpload.module,title:this.guideUpload.title,dataUrl:reader.result,uploadedAt:new Date().toLocaleDateString()});this.saveState();this.guideUpload.title='';this.guideUpload.file=null;this.showToast('Study guide published for all registered students in this program.');}; reader.readAsDataURL(f);
+                    const reader=new FileReader(); reader.onload=()=>{this.studyGuides.unshift({id:'GUIDE-'+Date.now(),program:this.guideUpload.program,module:this.guideUpload.module,title:this.guideUpload.title,dataUrl:reader.result,uploadedAt:new Date().toLocaleDateString()});this.logActivity('Study guide published: '+this.guideUpload.title+'.');this.saveState();this.guideUpload.title='';this.guideUpload.file=null;this.showToast('Study guide published for all registered students in this program.');}; reader.readAsDataURL(f);
                 },
                 readGuide(g){this.activeGuide=g;},
                 downloadGuide(g){const a=document.createElement('a');a.href=g.dataUrl;a.download=(g.title||'VIIT-Study-Guide')+'.pdf';a.click();},
                 addManualQuestion(){const f=this.manualQuestion,key=f.program+'::'+Number(f.module);if(!f.question.trim()||![f.a,f.b,f.c,f.d].every(x=>x.trim())){this.showToast('Complete the question and all four options.','error');return;}if(!this.questionBanks[key])this.questionBanks[key]=[];this.questionBanks[key].push({question:f.question,options:[f.a,f.b,f.c,f.d],answer:'ABCD'.indexOf(f.answer)});this.saveState();this.manualQuestion={program:f.program,module:f.module,question:'',a:'',b:'',c:'',d:'',answer:'A'};this.showToast('Manual question added to the selected module bank.');},
-                scheduleQuiz(){const start=new Date(this.scheduleForm.opens),end=new Date(this.scheduleForm.closes);if(!this.scheduleForm.opens||!this.scheduleForm.closes||end<=start){this.showToast('Choose a valid opening and closing time.','error');return;}this.quizSchedules.push({program:this.scheduleForm.program,module:Number(this.scheduleForm.module),opens:start.toISOString(),closes:end.toISOString()});this.saveState();this.showToast('Aptitude test schedule saved for enrolled students.');},
+                scheduleQuiz(){const start=new Date(this.scheduleForm.opens),end=new Date(this.scheduleForm.closes);if(!this.scheduleForm.opens||!this.scheduleForm.closes||end<=start){this.showToast('Choose a valid opening and closing time.','error');return;}this.quizSchedules.push({program:this.scheduleForm.program,module:Number(this.scheduleForm.module),opens:start.toISOString(),closes:end.toISOString()});this.logActivity('Aptitude test scheduled for '+this.scheduleForm.program+'.');this.saveState();this.showToast('Aptitude test schedule saved for enrolled students.');},
                 isQuizScheduled(program,module){const now=Date.now();const relevant=this.quizSchedules.filter(s=>s.program===program&&(s.module===-1||s.module===Number(module)));if(!relevant.length)return false;return relevant.some(s=>now>=new Date(s.opens).getTime()&&now<=new Date(s.closes).getTime());},
                 get filteredCourses() {
                     return this.courses.filter(c => {
