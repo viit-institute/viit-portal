@@ -822,6 +822,69 @@
                         </div>
                     </div>
 
+                    <!-- ACADEMIC ORGANIZER: PROGRAM / COURSE / MODULE GRID & LIST -->
+                    <section id="viit-academic-organizer" class="rounded-2xl border border-cyan-500/25 bg-brand-card p-5 sm:p-6 shadow-xl space-y-5">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                            <div>
+                                <p class="text-[11px] uppercase tracking-[.2em] font-extrabold text-cyan-300"><i class="fa-solid fa-sitemap mr-2"></i>Academic Management</p>
+                                <h3 class="text-xl font-black text-white mt-1">Programs, Courses & Modules</h3>
+                                <p class="text-xs text-slate-400 mt-1">Select a program, browse its course and view the linked modules.</p>
+                            </div>
+                            <div class="inline-flex rounded-xl border border-slate-700 bg-slate-950 p-1 self-start">
+                                <button type="button" @click="adminAcademicView='grid'" :class="adminAcademicView==='grid'?'bg-cyan-500 text-slate-950':'text-slate-300 hover:bg-slate-800'" class="rounded-lg px-3 py-2 text-xs font-bold"><i class="fa-solid fa-grip mr-1.5"></i>Grid</button>
+                                <button type="button" @click="adminAcademicView='list'" :class="adminAcademicView==='list'?'bg-cyan-500 text-slate-950':'text-slate-300 hover:bg-slate-800'" class="rounded-lg px-3 py-2 text-xs font-bold"><i class="fa-solid fa-list mr-1.5"></i>List</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <label class="block"><span class="mb-1.5 block text-xs font-bold text-cyan-200"><i class="fa-solid fa-diagram-project mr-1.5"></i>Program</span>
+                                <select x-model="adminSelectedProgramId" @change="adminSelectedModuleId=''" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm text-white"><option value="">All programs</option><template x-for="p in studyPrograms" :key="p.id"><option :value="p.id" x-text="p.name"></option></template></select>
+                            </label>
+                            <label class="block"><span class="mb-1.5 block text-xs font-bold text-amber-200"><i class="fa-solid fa-book-open mr-1.5"></i>Course</span>
+                                <select x-model="adminSelectedProgramId" @change="adminSelectedModuleId=''" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm text-white"><option value="">Select a course</option><template x-for="p in studyPrograms" :key="'course-'+p.id"><option :value="p.id" x-text="p.name"></option></template></select>
+                            </label>
+                            <label class="block"><span class="mb-1.5 block text-xs font-bold text-violet-200"><i class="fa-solid fa-layer-group mr-1.5"></i>Module</span>
+                                <select x-model="adminSelectedModuleId" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm text-white"><option value="">All modules</option><template x-for="m in studyModules.filter(x=>!adminSelectedProgramId || x.program_id===adminSelectedProgramId)" :key="'module-option-'+m.id"><option :value="m.id" x-text="'Module '+m.module_order+' — '+m.title"></option></template></select>
+                            </label>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-[11px]">
+                            <span class="rounded-full bg-cyan-500/10 px-3 py-1.5 text-cyan-200"><i class="fa-solid fa-folder-tree mr-1"></i><span x-text="(adminSelectedProgramId ? 1 : studyPrograms.length)+' programs'"></span></span>
+                            <span class="rounded-full bg-amber-500/10 px-3 py-1.5 text-amber-200"><i class="fa-solid fa-book mr-1"></i><span x-text="studyModules.filter(m=>!adminSelectedProgramId || m.program_id===adminSelectedProgramId).length+' modules'"></span></span>
+                            <span class="rounded-full bg-emerald-500/10 px-3 py-1.5 text-emerald-200"><i class="fa-solid fa-circle-check mr-1"></i><span x-text="studyModules.filter(m=>(!adminSelectedProgramId || m.program_id===adminSelectedProgramId) && m.is_published).length+' published'"></span></span>
+                        </div>
+                        <div x-show="!adminSelectedProgramId" class="space-y-3">
+                            <h4 class="text-sm font-extrabold text-white"><i class="fa-solid fa-folder-open text-cyan-300 mr-2"></i>All Programs / Courses</h4>
+                            <div :class="adminAcademicView==='grid'?'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3':'space-y-2'">
+                                <template x-for="p in studyPrograms" :key="'program-card-'+p.id">
+                                    <button type="button" @click="adminSelectedProgramId=p.id;adminSelectedModuleId=''" class="w-full rounded-xl border border-slate-700 bg-slate-950/80 p-4 text-left hover:border-cyan-400/60 hover:bg-slate-900 transition-all">
+                                        <div class="flex items-start justify-between gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300"><i class="fa-solid fa-graduation-cap"></i></span><span class="text-[10px] rounded-full px-2 py-1" :class="p.is_active?'bg-emerald-500/10 text-emerald-300':'bg-slate-800 text-slate-400'" x-text="p.is_active?'Active':'Inactive'"></span></div>
+                                        <h5 class="mt-3 text-sm font-extrabold text-white" x-text="p.name"></h5>
+                                        <p class="mt-1 text-xs text-slate-400" x-text="(p.course_duration||'Duration not set')+' • '+studyModules.filter(m=>m.program_id===p.id).length+' modules'"></p>
+                                        <span class="mt-3 inline-flex items-center text-xs font-bold text-cyan-300">Open course <i class="fa-solid fa-arrow-right ml-2"></i></span>
+                                    </button>
+                                </template>
+                            </div>
+                            <p x-show="studyPrograms.length===0 && !studyLoading" class="rounded-xl bg-slate-950 p-4 text-sm text-slate-400"><i class="fa-solid fa-circle-info mr-2"></i>No programs found. Refresh the Academic Library.</p>
+                        </div>
+                        <div x-show="adminSelectedProgramId" class="space-y-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-500/20 bg-slate-950 p-4">
+                                <div><p class="text-[10px] uppercase tracking-widest text-cyan-300">Selected Course</p><h4 class="text-base font-extrabold text-white" x-text="studyPrograms.find(p=>p.id===adminSelectedProgramId)?.name||'Selected program'"></h4><p class="text-xs text-slate-400 mt-1" x-text="(studyPrograms.find(p=>p.id===adminSelectedProgramId)?.course_duration||'')+' • '+studyModules.filter(m=>m.program_id===adminSelectedProgramId).length+' modules'"></p></div>
+                                <button type="button" @click="adminSelectedProgramId='';adminSelectedModuleId=''" class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-slate-800"><i class="fa-solid fa-arrow-left mr-1.5"></i>All programs</button>
+                            </div>
+                            <div :class="adminAcademicView==='grid'?'grid grid-cols-1 md:grid-cols-2 gap-3':'space-y-2'">
+                                <template x-for="m in studyModules.filter(x=>x.program_id===adminSelectedProgramId && (!adminSelectedModuleId || x.id===adminSelectedModuleId))" :key="'module-card-'+m.id">
+                                    <article class="rounded-xl border border-slate-700 bg-slate-950/80 p-4">
+                                        <div class="flex items-start justify-between gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300"><i class="fa-solid fa-layer-group"></i></span><span class="rounded-full px-2 py-1 text-[10px] font-bold" :class="m.is_published?'bg-emerald-500/10 text-emerald-300':'bg-slate-800 text-slate-400'" x-text="m.is_published?'Published':'Draft'"></span></div>
+                                        <h5 class="mt-3 text-sm font-extrabold text-white" x-text="'Module '+m.module_order+' — '+m.title"></h5>
+                                        <p class="mt-1 text-xs text-slate-400" x-text="(m.duration_hours||0)+' learning hours'"></p>
+                                        <p class="mt-2 text-xs leading-relaxed text-slate-300" x-text="m.description||'No module description added yet.'"></p>
+                                        <button type="button" @click="adminSelectedModuleId=adminSelectedModuleId===m.id?'':m.id" class="mt-3 text-xs font-bold text-cyan-300 hover:text-cyan-200"><i class="fa-solid fa-eye mr-1.5"></i><span x-text="adminSelectedModuleId===m.id?'Clear module filter':'Select this module'"></span></button>
+                                    </article>
+                                </template>
+                            </div>
+                            <p x-show="studyModules.filter(m=>m.program_id===adminSelectedProgramId).length===0" class="rounded-xl bg-slate-950 p-4 text-sm text-slate-400"><i class="fa-solid fa-circle-info mr-2"></i>No modules are linked to this course yet.</p>
+                        </div>
+                    </section>
+
                     <!-- ATTENDANCE MANAGEMENT -->
                     <div id="viit-attendance" class="bg-brand-card border border-violet-500/25 rounded-2xl p-6 shadow-xl space-y-4">
                         <div class="flex items-center justify-between flex-wrap gap-2"><div><h3 class="text-lg font-extrabold text-white"><i class="fa-solid fa-calendar-check text-violet-300 mr-2"></i>Attendance Management</h3><p class="text-xs text-slate-400 mt-1">Record and review daily student attendance</p></div><span class="text-xs rounded-full bg-violet-500/10 text-violet-200 px-3 py-1" x-text="attendanceRecords.length + ' records'"></span></div>
@@ -1259,6 +1322,8 @@
                 feeForm: {studentEmail:'',amount:'',date:new Date().toISOString().slice(0,10),status:'Paid'},
                 announcementForm: {title:'',message:'',audience:'Everyone'},
                 guideView: 'grid', activeGuide: null,
+                adminAcademicView: 'grid', adminSelectedProgramId: '', adminSelectedModuleId: '',
+                studyPrograms: [], studyModules: [], studyMaterials: [], studyLoading: false, studyLibraryError: '',
                 adminAccount: {name:'',email:'',age:'',education:'',role:'student',loginId:'',password:'',course:defaultCourses[0].name},
                 showAdminPassword: false,
                 showAdminConfirmPassword: false,
