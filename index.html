@@ -1514,7 +1514,8 @@ try {
     this.isLoggedIn = true;
     this.activeView = 'dashboard';
     await this.loadStudyLibrary();
-    if (this.currentUser.role === 'admin') await this.loadAdminProfiles();
+    if (this.currentUser.role === 'admin') { await this.loadAdminProfiles(); await this.loadAptitudeAdminData(); }
+    if (this.currentUser.role === 'student') await this.loadStudentAptitudeTests();
 
 } catch (err) {
     console.error('Session restore error:', err);
@@ -1946,7 +1947,8 @@ async handleLogin() {
 
         this.isLoggedIn = true;
         await this.loadStudyLibrary();
-        if (this.currentUser.role === 'admin') await this.loadAdminProfiles();
+        if (this.currentUser.role === 'admin') { await this.loadAdminProfiles(); await this.loadAptitudeAdminData(); }
+        if (this.currentUser.role === 'student') await this.loadStudentAptitudeTests();
         this.authModalOpen = false;
         this.activeView = 'dashboard';
         this.showToast(`Welcome back, ${this.currentUser.name}!`);
@@ -2085,7 +2087,7 @@ async handleLogin() {
                 async createAptitudeTest(){if(!this.aptitudeForm.moduleId||!this.aptitudeForm.questions.length){this.showToast('Select module and add MCQs.','error');return;}try{this.aptitudeSaving=true;const schedules=this.aptitudeForm.schedules.map(s=>({opens:new Date(s.opens).toISOString(),closes:new Date(s.closes).toISOString()}));const d=await this.aptitudeCall({action:'create_test',module_id:this.aptitudeForm.moduleId,title:this.aptitudeForm.title,test_type:this.aptitudeForm.testType,duration_minutes:this.aptitudeForm.duration,passing_marks:this.aptitudeForm.passing,attempt_schedules:schedules,questions:this.aptitudeForm.questions,question_source:'pdf_ai',is_published:this.aptitudeForm.publish});this.showToast(d.message);this.aptitudeForm.questions=[];await this.loadAptitudeAdminData();}catch(e){this.showToast(e.message,'error');}finally{this.aptitudeSaving=false;}},
                 async reviewAptitudeResult(id,decision){try{await this.aptitudeCall({action:'review_result',result_id:id,decision});this.showToast('Result '+decision);await this.loadAptitudeAdminData();}catch(e){this.showToast(e.message,'error');}},
                 async loadStudentAptitudeTests(){try{this.aptitudeStudentLoading=true;const d=await this.aptitudeCall({action:'student_tests'});this.aptitudeStudentTests=d.tests||[];}catch(e){this.showToast(e.message,'error');}finally{this.aptitudeStudentLoading=false;}},
-                async startSecureAptitudeTest(t){try{const used=(t.approved_results||[]).length,slot=(t.attempt_schedules||[])[used];if(!slot||Date.now()<new Date(slot.opens).getTime()||Date.now()>new Date(slot.closes).getTime())throw new Error('Attempt is not scheduled now.');const d=await this.aptitudeCall({action:'questions',test_id:t.id});this.secureQuiz={active:true,test:t,questions:d.questions||[],answers:{},index:0,timeLeft:Number(t.duration_minutes||30)*60,timer:null};if(!this.secureQuiz.questions.length)throw new Error('No questions');this.secureQuiz.timer=setInterval(()=>{if(this.secureQuiz.timeLeft>0)this.secureQuiz.timeLeft--;else this.submitSecureAptitudeTest(true);},1000);}catch(e){this.showToast(e.message,'error');}},
+                async startSecureAptitudeTest(t){try{const used=Number(t.attempts_used||0),slot=(t.attempt_schedules||[])[used];if(!slot||Date.now()<new Date(slot.opens).getTime()||Date.now()>new Date(slot.closes).getTime())throw new Error('Attempt is not scheduled now.');const d=await this.aptitudeCall({action:'questions',test_id:t.id});this.secureQuiz={active:true,test:t,questions:d.questions||[],answers:{},index:0,timeLeft:Number(t.duration_minutes||30)*60,timer:null};if(!this.secureQuiz.questions.length)throw new Error('No questions');this.secureQuiz.timer=setInterval(()=>{if(this.secureQuiz.timeLeft>0)this.secureQuiz.timeLeft--;else this.submitSecureAptitudeTest(true);},1000);}catch(e){this.showToast(e.message,'error');}},
                 async submitSecureAptitudeTest(auto=false){if(!this.secureQuiz.active)return;if(!auto&&!confirm('Submit this test?'))return;clearInterval(this.secureQuiz.timer);try{const d=await this.aptitudeCall({action:'submit_attempt',test_id:this.secureQuiz.test.id,answers:this.secureQuiz.answers});this.secureQuiz.active=false;this.showToast(d.message);await this.loadStudentAptitudeTests();}catch(e){this.showToast(e.message,'error');}},
                 startQuiz() {
                     const program=this.quiz.selectedProgram||this.currentUser.course,mi=Number(this.quiz.selectedModule||0);
