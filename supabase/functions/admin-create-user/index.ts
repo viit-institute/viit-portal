@@ -116,8 +116,10 @@ Deno.serve(async (req) => {
         role,
         phone: null,
         program_id: programId,
+        age,
+        education,
       })
-      .select("id, full_name, login_id, role, phone, program_id")
+      .select("id, full_name, login_id, role, phone, program_id, age, education")
       .single();
 
     if (insertError || !profile) {
