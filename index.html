@@ -826,6 +826,7 @@
                             <form @submit.prevent="adminCreateAccount()" class="p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-3">
                                 <h4 class="text-sm font-bold text-cyan-300">Create Student / Staff Login</h4>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><input required x-model="adminAccount.name" placeholder="Full name" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><input required type="email" x-model="adminAccount.email" placeholder="Email address" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><input required type="number" min="10" max="100" step="1" x-model.number="adminAccount.age" placeholder="Age" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><input required x-model="adminAccount.education" placeholder="Education (e.g. 12th, Graduate, Diploma)" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><select x-model="adminAccount.role" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="student">Student</option><option value="staff">Staff</option></select><input required x-model="adminAccount.loginId" placeholder="Login ID (issued by Admin)" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
                                 <input required type="password" minlength="8" x-model="adminAccount.password" placeholder="Temporary password (min 8 chars)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm">
                                 <template x-if="adminAccount.role==='student'"><select x-model="adminAccount.course" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><template x-for="c in courses" :key="c.name"><option :value="c.name" x-text="c.name"></option></template></select></template>
@@ -1307,7 +1308,7 @@
                 feeForm: {studentEmail:'',amount:'',date:new Date().toISOString().slice(0,10),status:'Paid'},
                 announcementForm: {title:'',message:'',audience:'Everyone'},
                 guideView: 'grid', activeGuide: null,
-                adminAccount: {name:'',email:'',role:'student',loginId:'',password:'',course:defaultCourses[0].name},
+                adminAccount: {name:'',email:'',age:'',education:'',role:'student',loginId:'',password:'',course:defaultCourses[0].name},
                 lastIssuedCredential: null,
                 guideUpload: {program:defaultCourses[0].name,module:'All Modules',title:'',file:null},
                 scheduleForm: {program:defaultCourses[0].name,module:'-1',opens:'',closes:''},
@@ -1475,8 +1476,10 @@ try {
                         this.showToast('Only an authenticated VIIT Admin can create accounts.', 'error');
                         return;
                     }
-                    if (!name || !email || !loginId || password.length < 8) {
-                        this.showToast('Enter name, valid email, Login ID and a password of at least 8 characters.', 'error');
+                    const age = Number(f.age);
+                    const education = (f.education || '').trim();
+                    if (!name || !email || !loginId || password.length < 8 || !Number.isInteger(age) || age < 10 || age > 100 || !education) {
+                        this.showToast('Enter name, valid email, age (10-100), education, Login ID and a password of at least 8 characters.', 'error');
                         return;
                     }
                     if (!/^[a-z0-9._-]{3,50}$/.test(loginId)) {
@@ -1489,6 +1492,8 @@ try {
                             body: {
                                 full_name: name,
                                 email,
+                                age,
+                                education,
                                 login_id: loginId,
                                 password,
                                 role: f.role,
@@ -1533,6 +1538,8 @@ try {
                         this.adminAccount = {
                             name: '',
                             email: '',
+                            age: '',
+                            education: '',
                             role: 'student',
                             loginId: '',
                             password: '',
