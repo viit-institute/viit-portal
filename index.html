@@ -698,7 +698,7 @@
             </template>
 
             <!-- COURSE-WISE STUDY LIBRARY: ROLE-BASED, DATABASE-SECURED -->
-            <div x-show="currentUser.role !== 'admin'" x-cloak>
+            <div x-cloak>
 <details id="viit-academic-library" class="group rounded-2xl border border-cyan-500/30 bg-brand-card shadow-xl overflow-hidden">
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5 sm:p-6 hover:bg-slate-800/40 [&::-webkit-details-marker]:hidden">
                     <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300"><i class="fa-solid fa-book-open text-lg"></i></span><span class="min-w-0"><span class="block text-xs font-bold uppercase tracking-widest text-cyan-300">VIIT Academic Library</span><span class="mt-1 block text-lg font-extrabold text-white">Course-wise Modules & Study Guides</span><span class="mt-1 block text-xs text-slate-400" x-text="currentUser.role==='admin' ? 'Admin view: all 15 courses and 62 modules. Publish only the content students should see.' : (currentUser.role==='staff' ? 'Only modules from courses assigned to your staff account.' : 'You can read only the published modules for your enrolled course.')"></span></span></span>
