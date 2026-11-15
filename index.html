@@ -1567,17 +1567,85 @@ try {
                 },
                 deleteAnnouncement(id) { const a=this.announcements.find(x=>x.id===id);this.announcements=this.announcements.filter(x=>x.id!==id);if(a)this.logActivity('Announcement deleted: '+a.title+'.');this.saveState();this.showToast('Announcement deleted.'); },
                 get myStudyGuides() { return this.studyGuides.filter(g=>g.program===this.currentUser.course); },
-                adminCreateAccount() {
-                    const f=this.adminAccount; const list=f.role==='staff'?this.staffAccounts:this.userAccounts;
-                    if(!f.name.trim()||!f.email.trim()||!f.loginId.trim()||!f.password||f.password.length<8){this.showToast('Enter name, email, Login ID and a password of at least 8 characters.','error');return;}
-                    if(list.some(a=>(a.email||'').toLowerCase()===f.email.trim().toLowerCase()||(a.loginId||'').toLowerCase()===f.loginId.trim().toLowerCase()) || this.staffAccounts.some(a=>(a.email||'').toLowerCase()===f.email.trim().toLowerCase()||(a.loginId||'').toLowerCase()===f.loginId.trim().toLowerCase()) || this.userAccounts.some(a=>(a.email||'').toLowerCase()===f.email.trim().toLowerCase()||(a.loginId||'').toLowerCase()===f.loginId.trim().toLowerCase())) { this.showToast('Email or Login ID already exists.','error'); return; }
-                    const account={name:f.name.trim(),role:f.role,email:f.email.trim(),loginId:f.loginId.trim(),password:f.password,course:f.role==='student'?f.course:'',studentId:f.role==='student'?'VIIT-'+Date.now().toString().slice(-8):''};
-                    list.push(account);
-                    if(f.role==='student') this.registeredStudents.unshift({...account,phone:'',paymentLabel:'Admin admission',payableFee:0});
-                    this.lastIssuedCredential={name:account.name,role:account.role,loginId:account.loginId,password:account.password};
-                    this.logActivity('New '+account.role+' account created for '+account.name+'.');
-                    this.saveState(); this.adminAccount={name:'',email:'',role:'student',loginId:'',password:'',course:this.courses[0].name};
-                    this.showToast('Account created. Credentials are displayed in the Admin-only panel below.');
+                async adminCreateAccount() {
+                    const f = this.adminAccount;
+                    const name = (f.name || '').trim();
+                    const email = (f.email || '').trim().toLowerCase();
+                    const loginId = (f.loginId || '').trim().toLowerCase();
+                    const password = f.password || '';
+
+                    if (!this.isLoggedIn || this.currentUser.role !== 'admin') {
+                        this.showToast('Only an authenticated VIIT Admin can create accounts.', 'error');
+                        return;
+                    }
+                    if (!name || !email || !loginId || password.length < 8) {
+                        this.showToast('Enter name, valid email, Login ID and a password of at least 8 characters.', 'error');
+                        return;
+                    }
+                    if (!/^[a-z0-9._-]{3,50}$/.test(loginId)) {
+                        this.showToast('Login ID must be 3-50 characters: letters, numbers, dot, underscore or hyphen.', 'error');
+                        return;
+                    }
+
+                    try {
+                        const { data, error } = await supabaseClient.functions.invoke('admin-create-user', {
+                            body: {
+                                full_name: name,
+                                email,
+                                login_id: loginId,
+                                password,
+                                role: f.role,
+                                course: f.role === 'student' ? f.course : null
+                            }
+                        });
+
+                        if (error || !data?.success || !data?.profile) {
+                            this.showToast(data?.message || error?.message || 'Account creation failed.', 'error');
+                            return;
+                        }
+
+                        const profile = data.profile;
+                        const account = {
+                            name: profile.full_name,
+                            role: profile.role,
+                            email,
+                            loginId: profile.login_id,
+                            course: f.role === 'student' ? f.course : '',
+                            studentId: f.role === 'student' ? profile.login_id.toUpperCase() : ''
+                        };
+
+                        if (f.role === 'student') {
+                            this.registeredStudents.unshift({
+                                ...account,
+                                phone: '',
+                                paymentLabel: 'Admin admission',
+                                payableFee: 0
+                            });
+                        } else {
+                            this.staffAccounts.unshift(account);
+                        }
+
+                        this.lastIssuedCredential = {
+                            name: account.name,
+                            role: account.role,
+                            loginId: account.loginId,
+                            password
+                        };
+                        this.logActivity('Supabase Auth account created for ' + name + ' (' + f.role + ').');
+                        this.saveState();
+                        this.adminAccount = {
+                            name: '',
+                            email: '',
+                            role: 'student',
+                            loginId: '',
+                            password: '',
+                            course: this.courses[0].name
+                        };
+                        this.showToast('Supabase login account created. Share credentials privately.', 'success');
+                    } catch (err) {
+                        console.error('Admin account creation error:', err);
+                        this.showToast('Unable to create account. Please try again.', 'error');
+                    }
                 },
                 async copyIssuedCredentials() {
                     if(!this.lastIssuedCredential)return;
@@ -1965,10 +2033,34 @@ async handleLogin() {
                     this.newCourse = { name: '', duration: '', price: '', description: '' };
                     this.showToast('New program added to catalogue & registration dropdown!');
                 },
-                logout() {
+                async logout() {
+                    try {
+                        const { error } = await supabaseClient.auth.signOut();
+                        if (error) {
+                            console.error('Supabase sign-out error:', error);
+                            this.showToast('Could not complete logout. Please try again.', 'error');
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('Logout error:', err);
+                        this.showToast('Unable to contact the authentication service.', 'error');
+                        return;
+                    }
+
+                    this.authSession = null;
+                    this.currentUser = {
+                        name: '',
+                        role: 'student',
+                        email: '',
+                        phone: '',
+                        course: this.courses[0]?.name || ''
+                    };
                     this.isLoggedIn = false;
                     this.activeView = 'landing';
-                    this.showToast('You have been logged out.');
+                    this.authModalOpen = false;
+                    this.quiz.active = false;
+                    this.mobileMenuOpen = false;
+                    this.showToast('You have been securely logged out.', 'success');
                 },
                 showToast(message, type = 'success') {
                     this.toast.message = message;
