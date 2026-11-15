@@ -886,14 +886,33 @@
                                         </summary>
                                         <div class="border-t border-slate-800 p-4 space-y-3"><p class="text-xs leading-relaxed text-slate-300" x-text="m.description||'No module description added yet.'"></p>
                                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><template x-for="step in (m.lesson_plan||[])" :key="step.time"><div class="rounded-lg bg-slate-900 p-3"><p class="text-[11px] font-bold text-amber-200" x-text="step.time+' • '+step.activity"></p><p class="mt-1 text-[11px] text-slate-400" x-text="step.details"></p></div></template></div>
-                                            <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-[11px] text-slate-400" x-text="studyMaterials.filter(g=>g.module_id===m.id).length+' study guide(s) linked'"></p><button type="button" @click="toggleModulePublish(m)" class="rounded-lg px-3 py-2 text-xs font-bold" :class="m.is_published?'border border-emerald-500/40 bg-emerald-500/10 text-emerald-300':'border border-slate-600 bg-slate-900 text-slate-200'" x-text="m.is_published?'Unpublish module':'Publish module'"></button></div>
+                                            <div class="rounded-xl border border-cyan-500/20 bg-slate-950/70 p-3 space-y-3">
+<div class="flex items-center justify-between gap-2"><p class="text-xs font-extrabold text-cyan-200"><i class="fa-solid fa-file-arrow-up mr-1"></i>Module Files</p><span class="text-[10px] text-slate-500">PDF • Max 5 MB</span></div>
+<form @submit.prevent="uploadModuleFile(m,$event)" class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
+<input name="title" required maxlength="120" placeholder="File title" class="min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white">
+<input name="file" type="file" accept="application/pdf,.pdf" required class="min-w-0 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-[11px] text-slate-300">
+<button type="submit" class="rounded-lg bg-cyan-500 px-3 py-2 text-xs font-extrabold text-slate-950"><i class="fa-solid fa-upload mr-1"></i>Upload</button>
+</form>
+<div class="space-y-2"><template x-for="g in studyMaterials.filter(x=>x.module_id===m.id && x.file_path)" :key="'admin-file-'+g.id">
+<div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-900 p-2.5"><div class="min-w-0"><p class="truncate text-xs font-bold text-white" x-text="g.title"></p><p class="text-[10px] text-slate-500" x-text="g.is_published?'Visible to enrolled students':'Hidden from students'"></p></div>
+<div class="flex items-center gap-2"><button type="button" @click="openStudyPdf(g)" class="text-xs font-bold text-cyan-300 underline">View</button><button type="button" @click="requestGuideDelete(g)" class="rounded-lg border border-rose-500/40 px-2.5 py-1.5 text-[11px] font-bold text-rose-300">Delete</button></div></div>
+</template><p x-show="studyMaterials.filter(x=>x.module_id===m.id && x.file_path).length===0" class="text-[11px] text-slate-500">No files uploaded for this module yet.</p></div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-2"><p class="text-[11px] text-slate-400" x-text="studyMaterials.filter(g=>g.module_id===m.id).length+' study guide(s) linked'"></p><button type="button" @click="toggleModulePublish(m)" class="rounded-lg px-3 py-2 text-xs font-bold" :class="m.is_published?'border border-emerald-500/40 bg-emerald-500/10 text-emerald-300':'border border-slate-600 bg-slate-900 text-slate-200'" x-text="m.is_published?'Unpublish module':'Publish module'"></button></div>
                                         </div>
                                     </details>
                                 </template>
                                 <p x-show="filteredAcademicModules.filter(m=>m.program_id===adminSelectedProgramId).length===0" class="rounded-xl bg-slate-950 p-4 text-sm text-slate-400">No modules match this search.</p>
                             </div>
                         </div>
-                        <div x-show="academicPreviewProgramId" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-3 sm:p-6" @keydown.escape.window="academicPreviewProgramId=''">
+                        <div x-show="pendingGuideDelete" x-cloak class="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-4" @keydown.escape.window="pendingGuideDelete=null;guideDeleteStep=0;guideDeletePhrase=''">
+<div class="w-full max-w-md rounded-2xl border border-rose-500/40 bg-slate-900 p-5 shadow-2xl" @click.stop>
+<div class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-300"><i class="fa-solid fa-shield-halved"></i></span><div><p class="text-sm font-black text-white">Verify file deletion</p><p class="text-[11px] text-rose-300">This action permanently removes the file</p></div></div>
+<p class="mt-4 text-sm text-slate-300">File: <strong class="text-white" x-text="pendingGuideDelete?.title"></strong></p>
+<div x-show="guideDeleteStep===0" class="mt-4 space-y-3"><p class="text-xs text-slate-400">Step 1 of 2: Confirm that you want to delete this module file.</p><div class="flex justify-end gap-2"><button type="button" @click="pendingGuideDelete=null" class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-bold text-slate-300">Cancel</button><button type="button" @click="guideDeleteStep=1" class="rounded-lg bg-rose-500 px-3 py-2 text-xs font-extrabold text-white">Continue</button></div></div>
+<div x-show="guideDeleteStep===1" class="mt-4 space-y-3"><p class="text-xs text-slate-400">Step 2 of 2: Type <strong class="text-rose-300">DELETE</strong> to verify.</p><input x-model="guideDeletePhrase" autocomplete="off" placeholder="Type DELETE" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"><div class="flex justify-end gap-2"><button type="button" @click="pendingGuideDelete=null;guideDeleteStep=0;guideDeletePhrase=''" class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-bold text-slate-300">Cancel</button><button type="button" :disabled="guideDeletePhrase!=='DELETE'" @click="deleteModuleFile()" class="rounded-lg bg-rose-600 px-3 py-2 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40">Permanently Delete</button></div></div>
+</div></div>
+<div x-show="academicPreviewProgramId" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-3 sm:p-6" @keydown.escape.window="academicPreviewProgramId=''">
                             <div class="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-cyan-500/30 bg-brand-card p-5 shadow-2xl" @click.stop>
                                 <div class="flex items-start justify-between gap-3"><div><p class="text-[10px] uppercase tracking-widest text-cyan-300">Student View Preview</p><h4 class="mt-1 text-lg font-black text-white" x-text="studyPrograms.find(p=>p.id===academicPreviewProgramId)?.name||'Course preview'"></h4><p class="mt-1 text-xs text-slate-400" x-text="(studyPrograms.find(p=>p.id===academicPreviewProgramId)?.course_duration||'')+' • '+(studyPrograms.find(p=>p.id===academicPreviewProgramId)?.total_hours||0)+' learning hours'"></p></div><button type="button" @click="academicPreviewProgramId=''" class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-bold text-slate-200"><i class="fa-solid fa-xmark mr-1"></i>Close</button></div>
                                 <div class="mt-4 space-y-2"><template x-for="m in studyModules.filter(x=>x.program_id===academicPreviewProgramId && x.is_published)" :key="'preview-'+m.id"><div class="rounded-xl border border-slate-700 bg-slate-950 p-4"><p class="text-sm font-bold text-white" x-text="m.module_order+'. '+m.title"></p><p class="mt-1 text-xs text-slate-400" x-text="m.description||'Study module'"></p><p class="mt-2 text-[11px] text-cyan-200" x-text="(m.duration_hours||0)+' hours • '+(m.lesson_plan||[]).length+' lesson-plan steps'"></p><template x-for="g in studyMaterials.filter(x=>x.module_id===m.id && x.is_published)" :key="'preview-guide-'+g.id"><p class="mt-2 text-xs text-emerald-200"><i class="fa-solid fa-book-open mr-1"></i><span x-text="g.title"></span></p></template></div></template><p x-show="studyModules.filter(x=>x.program_id===academicPreviewProgramId && x.is_published).length===0" class="rounded-xl bg-slate-950 p-4 text-sm text-slate-400">No published modules are visible to students yet.</p></div>
@@ -1414,6 +1433,7 @@
                 guideView: 'grid', activeGuide: null,
                 adminAcademicView: 'grid', adminSelectedProgramId: '', adminSelectedModuleId: '',
                 adminAcademicSearch: '', adminAcademicStatus: 'all', academicPreviewProgramId: '',
+                pendingGuideDelete: null, guideDeleteStep: 0, guideDeletePhrase: '',
                 studyPrograms: [], studyModules: [], studyMaterials: [], studyLoading: false, studyLibraryError: '',
                 adminAccount: {name:'',email:'',age:'',education:'',role:'student',loginId:'',password:'',course:defaultCourses[0].name},
                 showAdminPassword: false,
@@ -1663,6 +1683,34 @@ try {
                     if(error){console.error(error);this.showToast('Study guide could not be saved. Check database permissions.','error');return;}
                     this.studyGuideForm={moduleId:'',title:'',content:'',publish:false};
                     await this.loadStudyLibrary();this.showToast('Study guide saved successfully.');
+                },
+                async uploadModuleFile(module,event) {
+                    if(!this.isLoggedIn || this.currentUser.role!=='admin'){this.showToast('Only an authenticated Admin can upload module files.','error');return;}
+                    const form=event.currentTarget, title=(form.elements.title.value||'').trim(), file=form.elements.file.files?.[0];
+                    if(!title||!file){this.showToast('Enter a file title and choose a PDF.','error');return;}
+                    if(file.type!=='application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){this.showToast('Only PDF files are allowed.','error');return;}
+                    if(file.size>5*1024*1024){this.showToast('PDF must be 5 MB or smaller.','error');return;}
+                    const program=this.studyPrograms.find(p=>p.id===module.program_id);
+                    if(!program){this.showToast('Course not found for this module.','error');return;}
+                    const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_'), path=program.id+'/'+module.id+'/'+Date.now()+'-'+safeName;
+                    const {error:uploadError}=await supabaseClient.storage.from('study-guides').upload(path,file,{contentType:'application/pdf',upsert:false});
+                    if(uploadError){console.error(uploadError);this.showToast('File upload failed. Check storage permissions.','error');return;}
+                    const {error}=await supabaseClient.from('study_materials').insert({program_id:program.id,module_id:module.id,title,description:'Module PDF file',content:'',file_path:path,duration_minutes:60,lesson_plan:module.lesson_plan||[],is_published:true,uploaded_by:this.authSession?.user?.id});
+                    if(error){await supabaseClient.storage.from('study-guides').remove([path]);console.error(error);this.showToast('File record could not be saved.','error');return;}
+                    form.reset();await this.loadStudyLibrary();this.showToast('PDF uploaded and published for enrolled students.');
+                },
+                requestGuideDelete(guide) {
+                    if(!this.isLoggedIn || this.currentUser.role!=='admin'){this.showToast('Only Admin can delete module files.','error');return;}
+                    this.pendingGuideDelete=guide;this.guideDeleteStep=0;this.guideDeletePhrase='';
+                },
+                async deleteModuleFile() {
+                    if(!this.isLoggedIn || this.currentUser.role!=='admin' || !this.pendingGuideDelete || this.guideDeleteStep!==1 || this.guideDeletePhrase!=='DELETE'){this.showToast('Two-step Admin verification is required.','error');return;}
+                    const guide=this.pendingGuideDelete;
+                    if(guide.file_path){const {error:storageError}=await supabaseClient.storage.from('study-guides').remove([guide.file_path]);if(storageError){console.error(storageError);this.showToast('File could not be removed from secure storage.','error');return;}}
+                    const {error}=await supabaseClient.from('study_materials').delete().eq('id',guide.id);
+                    if(error){console.error(error);this.showToast('File record could not be deleted.','error');return;}
+                    this.pendingGuideDelete=null;this.guideDeleteStep=0;this.guideDeletePhrase='';
+                    await this.loadStudyLibrary();this.showToast('Module file permanently deleted.');
                 },
                 async openStudyPdf(guide) {
                     const {data,error}=await supabaseClient.storage.from('study-guides').createSignedUrl(guide.file_path,300);
