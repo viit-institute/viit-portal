@@ -523,20 +523,6 @@
             <template x-if="currentUser.role === 'student'">
                 <div class="space-y-6">
 
-                    <!-- ADMIN-PUBLISHED PDF STUDY GUIDES -->
-                    <div class="bg-brand-card border border-cyan-500/30 rounded-2xl p-6 shadow-xl space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div><h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-pdf text-rose-400 mr-2"></i>My Study Guides</h3><p class="text-xs text-slate-400 mt-1" x-text="'Published by Admin for ' + currentUser.course"></p></div>
-                            <div class="flex gap-2"><button @click="guideView='grid'" :class="guideView==='grid'?'bg-cyan-500 text-slate-950':'bg-slate-800 text-slate-300'" class="px-3 py-2 rounded-lg text-xs font-bold"><i class="fa-solid fa-grip mr-1"></i>Grid</button><button @click="guideView='list'" :class="guideView==='list'?'bg-cyan-500 text-slate-950':'bg-slate-800 text-slate-300'" class="px-3 py-2 rounded-lg text-xs font-bold"><i class="fa-solid fa-list mr-1"></i>List</button></div>
-                        </div>
-                        <div x-show="myStudyGuides.length===0" class="p-5 rounded-xl bg-slate-900 text-sm text-slate-400">No PDF study guide has been published for your registered program yet.</div>
-                        <div x-show="guideView==='grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            <template x-for="g in myStudyGuides" :key="g.id"><div class="p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-3"><div class="flex items-center gap-3"><i class="fa-solid fa-file-pdf text-rose-400 text-2xl"></i><div class="min-w-0"><p class="text-sm font-bold text-white truncate" x-text="g.title"></p><p class="text-[11px] text-slate-400" x-text="g.module + ' • ' + g.uploadedAt"></p></div></div><div class="flex gap-2"><button @click="readGuide(g)" class="flex-1 px-3 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 text-xs font-bold">Read / Study</button><button @click="downloadGuide(g)" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-xs" title="Download"><i class="fa-solid fa-download"></i></button></div></div></template>
-                        </div>
-                        <div x-show="guideView==='list'" class="space-y-2"><template x-for="g in myStudyGuides" :key="g.id"><div class="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-slate-900 border border-slate-700"><div><p class="text-sm font-semibold text-white" x-text="g.title"></p><p class="text-xs text-slate-400" x-text="g.module + ' • ' + g.uploadedAt"></p></div><div class="flex gap-2"><button @click="readGuide(g)" class="px-3 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 text-xs">Read</button><button @click="downloadGuide(g)" class="px-3 py-2 rounded-lg bg-slate-800 text-white text-xs">Download</button></div></div></template></div>
-                        <div x-show="activeGuide" class="rounded-xl border border-slate-700 overflow-hidden"><div class="flex justify-between items-center p-3 bg-slate-900"><span class="text-sm font-bold text-white" x-text="activeGuide?.title"></span><button @click="activeGuide=null" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i> Close</button></div><iframe x-show="activeGuide" :src="activeGuide?.dataUrl" class="w-full h-[650px] bg-white" title="PDF Study Guide"></iframe></div>
-                    </div>
-
                     <!-- Interactive Study Guide & Syllabus Progress Tracker -->
                     <div class="bg-brand-card border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -783,10 +769,10 @@
                         <div class="space-y-3">
                             <template x-for="course in studyPrograms" :key="course.id">
                                 <div class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-3">
-                                    <div class="flex flex-wrap justify-between gap-2"><div><h4 class="font-bold text-white" x-text="course.name"></h4><p class="text-xs text-slate-400" x-text="'Course duration: '+(course.course_duration||'Set course duration')"></p></div><span class="text-xs text-cyan-200" x-text="studyModules.filter(m=>m.program_id===course.id).length+' modules'"></span></div>
+                                    <div class="flex flex-wrap justify-between gap-2"><div><h4 class="font-bold text-white" x-text="course.name"></h4><p class="text-xs text-slate-400" x-text="'Course duration: '+(course.course_duration||'Set course duration')+' • Total study time: '+studyModules.filter(m=>m.program_id===course.id).reduce((sum,m)=>sum+Number(m.duration_hours||0),0)+' hours'"></p></div><span class="text-xs text-cyan-200" x-text="studyModules.filter(m=>m.program_id===course.id).length+' modules'"></span></div>
                                     <template x-for="m in studyModules.filter(x=>x.program_id===course.id)" :key="m.id">
                                         <div class="rounded-lg bg-slate-900 border border-slate-800 p-3">
-                                            <div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><p class="text-sm font-bold text-white" x-text="m.module_order+'. '+m.title"></p><p class="text-xs text-slate-400 mt-1" x-text="m.description"></p><p class="text-[11px] text-cyan-200 mt-2" x-text="'Module duration: '+m.duration_hours+' hour(s) • One-hour lesson plan included'"></p></div><button type="button" @click="toggleModulePublish(m)" class="h-fit rounded-lg px-3 py-2 text-xs font-bold" :class="m.is_published?'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40':'bg-slate-800 text-slate-300 border border-slate-600'" x-text="m.is_published?'Published — unpublish':'Publish to students'"></button></div>
+                                            <div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><p class="text-sm font-bold text-white" x-text="m.module_order+'. '+m.title"></p><p class="text-xs text-slate-400 mt-1" x-text="m.description"></p><p class="text-[11px] text-cyan-200 mt-2" x-text="'Module estimated duration: '+m.duration_hours+' hours • 1-hour study plan included'"></p></div><button type="button" @click="toggleModulePublish(m)" class="h-fit rounded-lg px-3 py-2 text-xs font-bold" :class="m.is_published?'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40':'bg-slate-800 text-slate-300 border border-slate-600'" x-text="m.is_published?'Published — unpublish':'Publish to students'"></button></div>
                                             <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2"><template x-for="step in (m.lesson_plan||[])" :key="step.time"><div class="rounded-md bg-slate-950 p-2"><p class="text-[11px] font-bold text-amber-200" x-text="step.time+' • '+step.activity"></p><p class="text-[11px] text-slate-400 mt-1" x-text="step.details"></p></div></template></div>
                                             <div class="mt-2 space-y-1"><template x-for="g in studyMaterials.filter(x=>x.module_id===m.id)" :key="g.id"><p class="text-xs text-emerald-200"><i class="fa-solid fa-book-open mr-1"></i><span x-text="g.title"></span><span class="text-slate-500" x-text="g.is_published?' • Published':' • Admin only'"></span></p></template></div>
                                         </div>
@@ -801,7 +787,7 @@
                         <div class="rounded-xl bg-slate-950 border border-slate-700 p-4"><p class="text-xs text-slate-400" x-text="currentUser.role==='student'?'Your enrolled course':'Your assigned course(s)'"></p><p class="text-lg font-extrabold text-white" x-text="currentUser.course||'Assigned course'"></p></div>
                         <template x-for="m in myStudyModules" :key="m.id">
                             <article class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-3">
-                                <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-white" x-text="m.module_order+'. '+m.title"></h4><span class="text-xs text-cyan-200" x-text="m.duration_hours+' hour(s)'"></span></div>
+                                <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-white" x-text="m.module_order+'. '+m.title"></h4><span class="text-xs text-cyan-200" x-text="m.duration_hours+' learning hours'"></span></div>
                                 <p class="text-sm text-slate-300" x-text="m.description"></p>
                                 <p class="text-xs text-emerald-200" x-text="m.learning_outcomes"></p>
                                 <div class="rounded-lg border border-cyan-500/20 bg-slate-900 p-3"><h5 class="text-xs font-extrabold text-cyan-200 mb-2">1-Hour Study Plan</h5><div class="space-y-2"><template x-for="step in (m.lesson_plan||[])" :key="step.time"><div><p class="text-xs font-bold text-amber-200" x-text="step.time+' — '+step.activity"></p><p class="text-xs text-slate-300 mt-0.5" x-text="step.details"></p></div></template></div></div>
@@ -897,7 +883,7 @@
                                 <input required x-model="guideUpload.title" placeholder="Study guide title" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm">
                                 <input required type="file" accept="application/pdf,.pdf" @change="guideUpload.file=$event.target.files[0]" class="w-full text-xs text-slate-300">
                                 <button class="w-full py-2.5 rounded-lg bg-rose-500 text-white text-sm font-extrabold">Publish to All Registered Students in Program</button>
-                                <p class="text-[11px] text-slate-500">PDFs are stored locally in this browser in this prototype. Use cloud storage for shared access across devices.</p>
+                                <p class="text-[11px] text-slate-500">PDFs are stored securely in VIIT cloud storage and visible only to Admin and the selected course.</p>
                             </form>
                         </div>
                         <div x-show="lastIssuedCredential" x-cloak class="p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 space-y-3">
@@ -1668,9 +1654,26 @@ try {
                     catch(e) { this.showToast('Copy is unavailable in this browser. Select and copy the credentials manually.','error'); }
                 },
                 async uploadStudyGuide(event) {
-                    const f=this.guideUpload.file; if(!f||f.type!=='application/pdf'){this.showToast('Please choose a PDF file.','error');return;}
-                    if(f.size>4500000){this.showToast('PDF is larger than the browser prototype storage limit (4.5 MB).','error');return;}
-                    const reader=new FileReader(); reader.onload=()=>{this.studyGuides.unshift({id:'GUIDE-'+Date.now(),program:this.guideUpload.program,module:this.guideUpload.module,title:this.guideUpload.title,dataUrl:reader.result,uploadedAt:new Date().toLocaleDateString()});this.logActivity('Study guide published: '+this.guideUpload.title+'.');this.saveState();this.guideUpload.title='';this.guideUpload.file=null;this.showToast('Study guide published for all registered students in this program.');}; reader.readAsDataURL(f);
+                    const file=this.guideUpload.file;
+                    if(!file||file.type!=='application/pdf'){this.showToast('Please choose a PDF file.','error');return;}
+                    if(file.size>5*1024*1024){this.showToast('PDF must be 5 MB or smaller.','error');return;}
+                    if(this.currentUser.role!=='admin'){this.showToast('Only Admin can upload PDF guides here.','error');return;}
+                    const program=this.studyPrograms.find(p=>p.name===this.guideUpload.program);
+                    const module=this.studyModules.find(m=>m.program_id===program?.id && m.title===this.guideUpload.module);
+                    if(!program||!module){this.showToast('Choose a valid course and module.','error');return;}
+                    const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+                    const path=program.id+'/'+module.id+'/'+Date.now()+'-'+safeName;
+                    const {error:uploadError}=await supabaseClient.storage.from('study-guides').upload(path,file,{contentType:'application/pdf',upsert:false});
+                    if(uploadError){console.error(uploadError);this.showToast('PDF upload failed.','error');return;}
+                    const {error}=await supabaseClient.from('study_materials').insert({
+                        program_id:program.id,module_id:module.id,title:this.guideUpload.title.trim(),
+                        description:'PDF Study Guide',file_path:path,duration_minutes:60,
+                        lesson_plan:module.lesson_plan||[],is_published:true,uploaded_by:this.authSession?.user?.id
+                    });
+                    if(error){await supabaseClient.storage.from('study-guides').remove([path]);console.error(error);this.showToast('PDF details could not be saved.','error');return;}
+                    this.guideUpload.title='';this.guideUpload.file=null;this.guideUpload.module='';
+                    const fileInput=event?.target?.querySelector('input[type="file"]');if(fileInput)fileInput.value='';
+                    await this.loadStudyLibrary();this.showToast('PDF guide published to the selected course module only.');
                 },
                 readGuide(g){this.activeGuide=g;},
                 downloadGuide(g){const a=document.createElement('a');a.href=g.dataUrl;a.download=(g.title||'VIIT-Study-Guide')+'.pdf';a.click();},
