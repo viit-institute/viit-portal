@@ -736,6 +736,23 @@
                             <label class="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" x-model="practiceDraft.isPublished" class="accent-violet-500"> Publish for enrolled students</label>
                             <div class="flex justify-end"><button class="rounded-lg bg-violet-500 px-4 py-2 text-xs font-extrabold text-slate-950">Save Practice Link</button></div>
                         </form>
+                        <form @submit.prevent="saveLearningAssignment()" class="rounded-xl border border-amber-500/30 bg-slate-900 p-4 space-y-3">
+                          <h4 class="font-extrabold text-amber-200">Practical Assignment Manager</h4>
+                          <div class="grid md:grid-cols-2 gap-2">
+                            <select required x-model="assignmentDraft.moduleId" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs"><option value="">Select module</option><template x-for="m in studyModules" :key="m.id"><option :value="m.id" x-text="(m.programs?.name||'Course')+' — '+m.title"></option></template></select>
+                            <input required x-model="assignmentDraft.title" maxlength="120" placeholder="Assignment title" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs">
+                            <input type="datetime-local" x-model="assignmentDraft.dueAt" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs">
+                            <input type="number" min="1" x-model.number="assignmentDraft.maxMarks" placeholder="Maximum marks" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs">
+                          </div>
+                          <textarea required rows="3" x-model="assignmentDraft.instructions" placeholder="Practical task instructions..." class="w-full rounded-lg bg-slate-950 border border-slate-700 p-3 text-xs"></textarea>
+                          <label class="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" x-model="assignmentDraft.isPublished"> Publish assignment</label>
+                          <div class="flex justify-end"><button class="rounded-lg bg-amber-400 px-4 py-2 text-xs font-extrabold text-slate-950">Save Assignment</button></div>
+                        </form>
+                        <div class="rounded-xl border border-emerald-500/20 bg-slate-950 p-4 space-y-2">
+                          <h4 class="font-bold text-emerald-200">Learning Progress & Assignment Submissions</h4>
+                          <p class="text-xs text-slate-400" x-text="moduleProgressRows.filter(p=>p.status==='completed').length+' completed module records • '+assignmentSubmissions.length+' assignment submissions'"></p>
+                          <template x-for="sub in assignmentSubmissions" :key="sub.id"><div class="rounded-lg bg-slate-900 p-3 text-xs flex flex-wrap justify-between gap-2"><div><b class="text-white" x-text="learningAssignments.find(a=>a.id===sub.assignment_id)?.title||'Assignment'"></b><p class="text-slate-400" x-text="sub.student_id+' • '+sub.status+' • '+(sub.submitted_at?new Date(sub.submitted_at).toLocaleString():'')"></p><p class="text-slate-300" x-text="sub.submission_text||'File submission'"></p></div><div class="flex gap-2 items-center"><input type="number" min="0" :max="learningAssignments.find(a=>a.id===sub.assignment_id)?.max_marks||100" x-model.number="sub._marks" placeholder="Marks" class="w-20 bg-slate-950 p-2 rounded"><input x-model="sub._feedback" placeholder="Feedback" class="w-28 bg-slate-950 p-2 rounded"><button type="button" @click="reviewAssignment(sub)" class="rounded bg-emerald-600 px-2 py-1">Review</button></div></div></template>
+                        </div>
                         <div class="space-y-3">
                             <template x-for="course in studyPrograms" :key="course.id">
                                 <div class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-3">
@@ -761,6 +778,8 @@
                                 <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-white" x-text="m.module_order+'. '+m.title"></h4><span class="text-xs text-cyan-200" x-text="m.duration_hours+' learning hours'"></span></div>
                                 <p class="text-sm text-slate-300" x-text="m.description"></p>
                                 <p class="text-xs text-emerald-200" x-text="m.learning_outcomes"></p>
+                                 <div class="mb-3 rounded-lg border border-emerald-500/20 bg-slate-900 p-3 flex items-center justify-between gap-2"><span class="text-xs text-slate-200">Module completion</span><button type="button" @click="toggleModuleProgress(m)" class="rounded-lg px-3 py-2 text-xs font-bold" :class="isModuleProgressComplete(m.id)?'bg-emerald-500/20 text-emerald-200':'bg-slate-800 text-slate-200'" x-text="isModuleProgressComplete(m.id)?'Completed ✓':'Mark as complete'"></button></div>
+                                 <div class="rounded-lg border border-amber-500/20 bg-slate-900 p-3 space-y-2"><h5 class="text-xs font-extrabold text-amber-200">Practical Assignments</h5><template x-for="a in learningAssignments.filter(x=>x.module_id===m.id && x.is_published)" :key="a.id"><div class="rounded bg-slate-950 p-3 space-y-2"><p class="text-xs font-bold text-white" x-text="a.title+' • '+a.max_marks+' marks'"></p><p class="text-xs text-slate-300 whitespace-pre-line" x-text="a.instructions"></p><p class="text-[10px] text-slate-400" x-text="a.due_at?'Due: '+new Date(a.due_at).toLocaleString():'No due date'"></p><textarea rows="2" :id="'submission-'+a.id" placeholder="Write your solution / practical work..." class="w-full rounded bg-slate-900 border border-slate-700 p-2 text-xs"></textarea><button type="button" @click="submitAssignment(a)" class="rounded bg-amber-400 text-slate-950 px-3 py-2 text-xs font-bold">Submit Work</button><p class="text-[10px] text-emerald-300" x-text="assignmentSubmissions.find(x=>x.assignment_id===a.id && x.student_id===authSession?.user?.id)?.status||''"></p></div></template><p x-show="learningAssignments.filter(x=>x.module_id===m.id && x.is_published).length===0" class="text-[11px] text-slate-500">No practical assignments published yet.</p></div>
                                  <div class="rounded-lg border border-violet-500/20 bg-slate-900 p-3 space-y-2"><h5 class="text-xs font-extrabold text-violet-200">Practice & Learning Resources</h5><template x-for="r in practiceResources.filter(x=>x.module_id===m.id && x.is_published)" :key="r.id"><a :href="r.url" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between gap-2 rounded-lg bg-slate-950 p-3 border border-slate-800"><span class="min-w-0"><span class="block text-xs font-bold text-white" x-text="r.title"></span><span class="block text-[10px] text-slate-400" x-text="r.resource_type+' • '+r.level+' • '+(r.description||'Open learning resource')"></span></span><span class="text-xs font-bold text-violet-300 shrink-0">Start Practice ↗</span></a></template><p x-show="practiceResources.filter(x=>x.module_id===m.id && x.is_published).length===0" class="text-[11px] text-slate-500">Practice resources will appear here when Admin publishes them.</p></div>
                                 <div class="rounded-lg border border-cyan-500/20 bg-slate-900 p-3"><h5 class="text-xs font-extrabold text-cyan-200 mb-2">1-Hour Study Plan</h5><div class="space-y-2"><template x-for="step in (m.lesson_plan||[])" :key="step.time"><div><p class="text-xs font-bold text-amber-200" x-text="step.time+' — '+step.activity"></p><p class="text-xs text-slate-300 mt-0.5" x-text="step.details"></p></div></template></div></div>
                                 <div class="space-y-2"><template x-for="g in studyMaterials.filter(x=>x.module_id===m.id && x.is_published)" :key="g.id"><div class="rounded-lg bg-slate-900 border border-slate-700 p-3"><p class="text-sm font-bold text-white" x-text="g.title"></p><p class="text-xs text-slate-300 whitespace-pre-line mt-2" x-text="g.content"></p><template x-if="g.file_path"><button type="button" @click="openStudyPdf(g)" class="mt-2 text-xs font-bold text-cyan-300 underline">Open PDF guide</button></template></div></template></div>
@@ -1412,7 +1431,7 @@
                 adminAcademicView: 'grid', adminSelectedProgramId: '', adminSelectedModuleId: '',
                 adminAcademicSearch: '', adminAcademicStatus: 'all', academicPreviewProgramId: '',
                 pendingGuideDelete: null, guideDeleteStep: 0, guideDeletePhrase: '',
-                studyPrograms: [], studyModules: [], studyMaterials: [], practiceResources: [], studyLoading: false, studyLibraryError: '', practiceDraft:{moduleId:'',title:'',url:'',resourceType:'practice',level:'beginner',description:'',isPublished:false},
+                studyPrograms: [], studyModules: [], studyMaterials: [], practiceResources: [], learningAssignments: [], assignmentSubmissions: [], moduleProgressRows: [], studyLoading: false, studyLibraryError: '', assignmentDraft:{moduleId:'',title:'',instructions:'',dueAt:'',maxMarks:100,isPublished:false}, practiceDraft:{moduleId:'',title:'',url:'',resourceType:'practice',level:'beginner',description:'',isPublished:false},
                 adminAccount: {name:'',email:'',age:'',education:'',role:'student',loginId:'',password:'',course:defaultCourses[0].name},
                 showAdminPassword: false,
                 showAdminConfirmPassword: false,
@@ -1629,24 +1648,65 @@ try {
                     if (!supabaseClient || !this.isLoggedIn) return;
                     this.studyLoading = true; this.studyLibraryError = '';
                     try {
-                        const [programRes,moduleRes,materialRes,resourceRes] = await Promise.all([
+                        const [programRes,moduleRes,materialRes,resourceRes,assignmentRes,submissionRes,progressRes] = await Promise.all([
                             supabaseClient.from('programs').select('id,name,course_duration,total_hours,capstone,is_active').order('name'),
                             supabaseClient.from('modules').select('*, programs(name,course_duration)').order('module_order'),
                             supabaseClient.from('study_materials').select('*').order('created_at',{ascending:false}),
-                            supabaseClient.from('practice_resources').select('*').order('created_at',{ascending:false})
+                            supabaseClient.from('practice_resources').select('*').order('created_at',{ascending:false}),
+                            supabaseClient.from('learning_assignments').select('*').order('created_at',{ascending:false}),
+                            supabaseClient.from('assignment_submissions').select('*').order('submitted_at',{ascending:false}),
+                            supabaseClient.from('module_progress').select('*')
                         ]);
                         if (programRes.error) throw programRes.error;
                         if (moduleRes.error) throw moduleRes.error;
                         if (materialRes.error) throw materialRes.error;
                         if (resourceRes.error) throw resourceRes.error;
+                        if (assignmentRes.error) throw assignmentRes.error;
+                        if (submissionRes.error) throw submissionRes.error;
+                        if (progressRes.error) throw progressRes.error;
                         this.studyPrograms = programRes.data || [];
                         this.studyModules = moduleRes.data || [];
                         this.studyMaterials = materialRes.data || [];
                         this.practiceResources = resourceRes.data || [];
+                        this.learningAssignments = assignmentRes.data || [];
+                        this.assignmentSubmissions = submissionRes.data || [];
+                        this.moduleProgressRows = progressRes.data || [];
                     } catch (err) {
                         console.error('Study library load error:',err);
                         this.studyLibraryError = 'Course library could not be loaded. Please refresh or contact Admin.';
                     } finally { this.studyLoading = false; }
+                },
+                isModuleProgressComplete(moduleId) { return this.moduleProgressRows.some(p=>p.module_id===moduleId && p.student_id===this.authSession?.user?.id && p.status==='completed'); },
+                async toggleModuleProgress(module) {
+                    if(this.currentUser.role!=='student')return;
+                    const studentId=this.authSession?.user?.id;if(!studentId)return;
+                    const done=this.isModuleProgressComplete(module.id);
+                    const payload={student_id:studentId,module_id:module.id,status:done?'in_progress':'completed',completed_at:done?null:new Date().toISOString(),updated_at:new Date().toISOString()};
+                    const {error}=await supabaseClient.from('module_progress').upsert(payload,{onConflict:'student_id,module_id'});
+                    if(error){console.error(error);this.showToast('Progress could not be saved.','error');return;}
+                    await this.loadStudyLibrary();this.showToast(done?'Module marked in progress.':'Module completed. Progress saved.');
+                },
+                async saveLearningAssignment() {
+                    if(this.currentUser.role!=='admin')return;
+                    const d=this.assignmentDraft;
+                    if(!d.moduleId||!d.title.trim()||!d.instructions.trim()){this.showToast('Select module and enter assignment details.','error');return;}
+                    const {error}=await supabaseClient.from('learning_assignments').insert({module_id:d.moduleId,title:d.title.trim(),instructions:d.instructions.trim(),due_at:d.dueAt?new Date(d.dueAt).toISOString():null,max_marks:Number(d.maxMarks)||100,is_published:!!d.isPublished,created_by:this.authSession?.user?.id});
+                    if(error){console.error(error);this.showToast('Assignment could not be saved.','error');return;}
+                    this.assignmentDraft={moduleId:'',title:'',instructions:'',dueAt:'',maxMarks:100,isPublished:false};await this.loadStudyLibrary();this.showToast('Assignment saved.');
+                },
+                async submitAssignment(assignment) {
+                    if(this.currentUser.role!=='student')return;
+                    const el=document.getElementById('submission-'+assignment.id),content=el?.value?.trim();
+                    if(!content){this.showToast('Enter your practical work before submitting.','error');return;}
+                    const {error}=await supabaseClient.from('assignment_submissions').upsert({assignment_id:assignment.id,student_id:this.authSession?.user?.id,submission_text:content,status:'submitted',submitted_at:new Date().toISOString()},{onConflict:'assignment_id,student_id'});
+                    if(error){console.error(error);this.showToast('Assignment submission failed.','error');return;}
+                    await this.loadStudyLibrary();this.showToast('Assignment submitted to Admin.');
+                },
+                async reviewAssignment(submission) {
+                    if(this.currentUser.role!=='admin')return;
+                    const {error}=await supabaseClient.from('assignment_submissions').update({status:'reviewed',marks_obtained:Number(submission._marks)||0,feedback:submission._feedback||'',reviewed_by:this.authSession?.user?.id,reviewed_at:new Date().toISOString()}).eq('id',submission.id);
+                    if(error){this.showToast('Could not save assignment review.','error');return;}
+                    await this.loadStudyLibrary();this.showToast('Assignment reviewed.');
                 },
                 async savePracticeResource() {
                     if(this.currentUser.role!=='admin'){this.showToast('Only Admin can manage practice links.','error');return;}
