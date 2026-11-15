@@ -975,9 +975,13 @@
                             <div><label class="block text-xs text-slate-300 mb-1">Opens at</label><input required type="datetime-local" x-model="scheduleForm.opens" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
                             <div><label class="block text-xs text-slate-300 mb-1">Closes at</label><input required type="datetime-local" x-model="scheduleForm.closes" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><button class="mt-2 w-full py-2.5 rounded-lg bg-amber-500 text-slate-950 text-sm font-extrabold">Schedule Aptitude Test</button></div>
                         </form>
+                        <div class="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                            <input type="search" x-model="adminSearchQuery" placeholder="Search students or staff by name, Login ID, course or phone..." class="w-full sm:flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-500">
+                            <button type="button" @click="exportAdminAccounts()" class="rounded-xl bg-cyan-500/15 border border-cyan-500/30 px-4 py-2.5 text-xs font-bold text-cyan-200 hover:bg-cyan-500/25"><i class="fa-solid fa-file-csv mr-2"></i>Export Accounts CSV</button>
+                        </div>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <div class="overflow-x-auto"><h4 class="text-sm font-bold text-white mb-2">All Student Accounts</h4><table class="w-full text-xs"><thead class="text-slate-400"><tr><th class="p-2 text-left">Name / ID</th><th class="p-2 text-left">Program</th><th class="p-2 text-left">Email</th></tr></thead><tbody><template x-for="st in registeredStudents" :key="st.email"><tr class="border-t border-slate-800"><td class="p-2" x-text="st.name+' / '+(st.studentId||'—')"></td><td class="p-2" x-text="st.course"></td><td class="p-2" x-text="st.email"></td></tr></template></tbody></table></div>
-                            <div class="overflow-x-auto"><h4 class="text-sm font-bold text-white mb-2">All Staff Accounts</h4><table class="w-full text-xs"><thead class="text-slate-400"><tr><th class="p-2 text-left">Name</th><th class="p-2 text-left">Login ID</th><th class="p-2 text-left">Email</th></tr></thead><tbody><template x-for="st in staffAccounts" :key="st.email"><tr class="border-t border-slate-800"><td class="p-2" x-text="st.name"></td><td class="p-2" x-text="st.loginId"></td><td class="p-2" x-text="st.email"></td></tr></template></tbody></table></div>
+                            <div class="overflow-x-auto"><h4 class="text-sm font-bold text-white mb-2">All Student Accounts <span class="text-slate-500" x-text="'('+filteredAdminStudents.length+')'"></span></h4><table class="w-full text-xs"><thead class="text-slate-400"><tr><th class="p-2 text-left">Name / ID</th><th class="p-2 text-left">Program</th><th class="p-2 text-left">Phone</th></tr></thead><tbody><template x-for="st in filteredAdminStudents" :key="st.email"><tr class="border-t border-slate-800"><td class="p-2" x-text="st.name+' / '+(st.studentId||st.loginId||'—')"></td><td class="p-2" x-text="st.course||'—'"></td><td class="p-2" x-text="st.phone||'—'"></td></tr></template><tr x-show="filteredAdminStudents.length===0"><td colspan="3" class="p-3 text-center text-slate-500">No matching students.</td></tr></tbody></table></div>
+                            <div class="overflow-x-auto"><h4 class="text-sm font-bold text-white mb-2">All Staff Accounts <span class="text-slate-500" x-text="'('+filteredAdminStaff.length+')'"></span></h4><table class="w-full text-xs"><thead class="text-slate-400"><tr><th class="p-2 text-left">Name</th><th class="p-2 text-left">Login ID</th><th class="p-2 text-left">Phone</th></tr></thead><tbody><template x-for="st in filteredAdminStaff" :key="st.email"><tr class="border-t border-slate-800"><td class="p-2" x-text="st.name"></td><td class="p-2" x-text="st.loginId"></td><td class="p-2" x-text="st.phone||'—'"></td></tr></template><tr x-show="filteredAdminStaff.length===0"><td colspan="3" class="p-3 text-center text-slate-500">No matching staff.</td></tr></tbody></table></div>
                         </div>
                         <p class="text-[11px] text-amber-300">Security required before production: connect server-side authentication, role-based access control, encrypted credential handling and secure admin-managed password resets. The current HTML prototype cannot securely enforce admin-only permissions.</p>
                     </div>
@@ -1320,6 +1324,7 @@
                 },
                 passwordChangeLoading: false,
                 searchQuery: '',
+                adminSearchQuery: '',
                 selectedCategory: 'All',
                 categories: ['All', 'Office & Accounting', 'Office & IT Support', 'Programming & DB', 'Infrastructure & Cloud', 'Design & CAD'],
                 completedModulesMap: {},
@@ -1446,6 +1451,7 @@ try {
     this.isLoggedIn = true;
     this.activeView = 'dashboard';
     await this.loadStudyLibrary();
+    if (this.currentUser.role === 'admin') await this.loadAdminProfiles();
 
 } catch (err) {
     console.error('Session restore error:', err);
@@ -1493,6 +1499,30 @@ try {
                     this.logActivity('Announcement published: '+f.title.trim()+'.');this.saveState();this.announcementForm={title:'',message:'',audience:'Everyone'};this.showToast('Announcement published.');
                 },
                 deleteAnnouncement(id) { const a=this.announcements.find(x=>x.id===id);this.announcements=this.announcements.filter(x=>x.id!==id);if(a)this.logActivity('Announcement deleted: '+a.title+'.');this.saveState();this.showToast('Announcement deleted.'); },
+                get filteredAdminStudents() {
+                    const q=(this.adminSearchQuery||'').trim().toLowerCase();
+                    return this.registeredStudents.filter(st=>!q||[st.name,st.loginId,st.studentId,st.course,st.phone].some(v=>String(v||'').toLowerCase().includes(q)));
+                },
+                get filteredAdminStaff() {
+                    const q=(this.adminSearchQuery||'').trim().toLowerCase();
+                    return this.staffAccounts.filter(st=>!q||[st.name,st.loginId,st.phone].some(v=>String(v||'').toLowerCase().includes(q)));
+                },
+                async loadAdminProfiles() {
+                    if (!supabaseClient || !this.isLoggedIn || this.currentUser.role !== 'admin') return;
+                    const {data,error}=await supabaseClient.from('profiles').select('id,full_name,login_id,role,phone,program_id,age,education,created_at,programs(name)').order('created_at',{ascending:false});
+                    if(error){console.error('Admin profile load error:',error);this.showToast('Account directory could not be loaded from the database.','error');return;}
+                    const rows=data||[];
+                    this.registeredStudents=rows.filter(p=>p.role==='student').map(p=>({email:p.id,name:p.full_name||p.login_id,loginId:p.login_id,studentId:(p.login_id||'').toUpperCase(),role:p.role,phone:p.phone||'',course:p.programs?.name||'',age:p.age??'',education:p.education||'',createdAt:p.created_at}));
+                    this.staffAccounts=rows.filter(p=>p.role==='staff').map(p=>({email:p.id,name:p.full_name||p.login_id,loginId:p.login_id,role:p.role,phone:p.phone||'',course:p.programs?.name||'',age:p.age??'',education:p.education||'',createdAt:p.created_at}));
+                },
+                exportAdminAccounts() {
+                    if(this.currentUser.role!=='admin'){this.showToast('Only Admin can export account reports.','error');return;}
+                    const rows=[['Role','Name','Login ID','Course','Phone','Age','Education','Created At'],...this.registeredStudents.map(p=>['Student',p.name,p.loginId,p.course,p.phone,p.age,p.education,p.createdAt]),...this.staffAccounts.map(p=>['Staff',p.name,p.loginId,p.course,p.phone,p.age,p.education,p.createdAt])];
+                    const csv=rows.map(row=>row.map(value=>'"'+String(value??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+                    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+                    const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='VIIT-accounts-report-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+                    this.showToast('Account report exported successfully.');
+                },
                 get myStudyGuides() { return this.studyGuides.filter(g=>g.program===this.currentUser.course); },
                 get myStudyModules() {
                     return this.studyModules.filter(m => this.currentUser.role === 'student' ? m.is_published === true : true);
@@ -1612,6 +1642,7 @@ try {
                             password
                         };
                         this.logActivity('Supabase Auth account created for ' + name + ' (' + f.role + ').');
+                        await this.loadAdminProfiles();
                         this.saveState();
                         this.adminAccount = {
                             name: '',
@@ -1805,6 +1836,7 @@ async handleLogin() {
 
         this.isLoggedIn = true;
         await this.loadStudyLibrary();
+        if (this.currentUser.role === 'admin') await this.loadAdminProfiles();
         this.authModalOpen = false;
         this.activeView = 'dashboard';
         this.showToast(`Welcome back, ${this.currentUser.name}!`);
