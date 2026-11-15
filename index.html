@@ -723,6 +723,19 @@
                             <label class="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" x-model="studyGuideForm.publish" class="accent-cyan-500"> Publish this guide for enrolled students</label>
                             <button class="rounded-lg bg-cyan-500 px-4 py-2.5 text-sm font-extrabold text-slate-950">Save Study Guide</button>
                         </form>
+                        <form @submit.prevent="savePracticeResource()" class="rounded-xl border border-violet-500/30 bg-slate-900 p-4 space-y-3">
+                            <h4 class="font-extrabold text-violet-200">Practice & Learning Resource Manager</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              <select required x-model="practiceDraft.moduleId" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs"><option value="">Select module</option><template x-for="m in studyModules" :key="m.id"><option :value="m.id" x-text="(m.programs?.name||'Course')+' — '+m.title"></option></template></select>
+                              <input required maxlength="120" x-model="practiceDraft.title" placeholder="Resource title" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs">
+                              <input required type="url" x-model="practiceDraft.url" placeholder="https://..." class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs">
+                              <select x-model="practiceDraft.resourceType" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs"><option value="practice">Practice website</option><option value="video">Video tutorial</option><option value="documentation">Documentation</option><option value="tool">Online tool / lab</option></select>
+                              <select x-model="practiceDraft.level" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="all">All levels</option></select>
+                              <input x-model="practiceDraft.description" maxlength="300" placeholder="Short description (optional)" class="rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-xs">
+                            </div>
+                            <label class="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" x-model="practiceDraft.isPublished" class="accent-violet-500"> Publish for enrolled students</label>
+                            <div class="flex justify-end"><button class="rounded-lg bg-violet-500 px-4 py-2 text-xs font-extrabold text-slate-950">Save Practice Link</button></div>
+                        </form>
                         <div class="space-y-3">
                             <template x-for="course in studyPrograms" :key="course.id">
                                 <div class="rounded-xl border border-slate-700 bg-slate-950/70 p-4 space-y-3">
@@ -731,6 +744,7 @@
                                         <div class="rounded-lg bg-slate-900 border border-slate-800 p-3">
                                             <div class="flex flex-wrap justify-between gap-2"><div class="min-w-0"><p class="text-sm font-bold text-white" x-text="m.module_order+'. '+m.title"></p><p class="text-xs text-slate-400 mt-1" x-text="m.description"></p><p class="text-[11px] text-cyan-200 mt-2" x-text="'Module estimated duration: '+m.duration_hours+' hours • 1-hour study plan included'"></p></div><button type="button" @click="toggleModulePublish(m)" class="h-fit rounded-lg px-3 py-2 text-xs font-bold" :class="m.is_published?'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40':'bg-slate-800 text-slate-300 border border-slate-600'" x-text="m.is_published?'Published — unpublish':'Publish to students'"></button></div>
                                             <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2"><template x-for="step in (m.lesson_plan||[])" :key="step.time"><div class="rounded-md bg-slate-950 p-2"><p class="text-[11px] font-bold text-amber-200" x-text="step.time+' • '+step.activity"></p><p class="text-[11px] text-slate-400 mt-1" x-text="step.details"></p></div></template></div>
+                                             <div class="mt-3 rounded-lg border border-violet-500/20 bg-slate-950 p-3 space-y-2"><p class="text-xs font-extrabold text-violet-200">Practice links</p><template x-for="r in practiceResources.filter(x=>x.module_id===m.id)" :key="r.id"><div class="flex items-center justify-between gap-2 text-xs"><div class="min-w-0"><p class="font-semibold text-white truncate" x-text="r.title"></p><p class="text-[10px] text-slate-400" x-text="r.level+' • '+(r.is_published?'Published':'Draft')"></p></div><div class="flex gap-2 shrink-0"><button type="button" @click="editPracticeResource(r)" class="text-cyan-300 underline">Edit</button><button type="button" @click="deletePracticeResource(r)" class="text-rose-300 underline">Delete</button></div></div></template><p x-show="practiceResources.filter(x=>x.module_id===m.id).length===0" class="text-[11px] text-slate-500">No links added.</p></div>
                                             <div class="mt-2 space-y-1"><template x-for="g in studyMaterials.filter(x=>x.module_id===m.id)" :key="g.id"><p class="text-xs text-emerald-200"><i class="fa-solid fa-book-open mr-1"></i><span x-text="g.title"></span><span class="text-slate-500" x-text="g.is_published?' • Published':' • Admin only'"></span></p></template></div>
                                         </div>
                                     </template>
@@ -747,6 +761,7 @@
                                 <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-white" x-text="m.module_order+'. '+m.title"></h4><span class="text-xs text-cyan-200" x-text="m.duration_hours+' learning hours'"></span></div>
                                 <p class="text-sm text-slate-300" x-text="m.description"></p>
                                 <p class="text-xs text-emerald-200" x-text="m.learning_outcomes"></p>
+                                 <div class="rounded-lg border border-violet-500/20 bg-slate-900 p-3 space-y-2"><h5 class="text-xs font-extrabold text-violet-200">Practice & Learning Resources</h5><template x-for="r in practiceResources.filter(x=>x.module_id===m.id && x.is_published)" :key="r.id"><a :href="r.url" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between gap-2 rounded-lg bg-slate-950 p-3 border border-slate-800"><span class="min-w-0"><span class="block text-xs font-bold text-white" x-text="r.title"></span><span class="block text-[10px] text-slate-400" x-text="r.resource_type+' • '+r.level+' • '+(r.description||'Open learning resource')"></span></span><span class="text-xs font-bold text-violet-300 shrink-0">Start Practice ↗</span></a></template><p x-show="practiceResources.filter(x=>x.module_id===m.id && x.is_published).length===0" class="text-[11px] text-slate-500">Practice resources will appear here when Admin publishes them.</p></div>
                                 <div class="rounded-lg border border-cyan-500/20 bg-slate-900 p-3"><h5 class="text-xs font-extrabold text-cyan-200 mb-2">1-Hour Study Plan</h5><div class="space-y-2"><template x-for="step in (m.lesson_plan||[])" :key="step.time"><div><p class="text-xs font-bold text-amber-200" x-text="step.time+' — '+step.activity"></p><p class="text-xs text-slate-300 mt-0.5" x-text="step.details"></p></div></template></div></div>
                                 <div class="space-y-2"><template x-for="g in studyMaterials.filter(x=>x.module_id===m.id && x.is_published)" :key="g.id"><div class="rounded-lg bg-slate-900 border border-slate-700 p-3"><p class="text-sm font-bold text-white" x-text="g.title"></p><p class="text-xs text-slate-300 whitespace-pre-line mt-2" x-text="g.content"></p><template x-if="g.file_path"><button type="button" @click="openStudyPdf(g)" class="mt-2 text-xs font-bold text-cyan-300 underline">Open PDF guide</button></template></div></template></div>
                             </article>
@@ -1397,7 +1412,7 @@
                 adminAcademicView: 'grid', adminSelectedProgramId: '', adminSelectedModuleId: '',
                 adminAcademicSearch: '', adminAcademicStatus: 'all', academicPreviewProgramId: '',
                 pendingGuideDelete: null, guideDeleteStep: 0, guideDeletePhrase: '',
-                studyPrograms: [], studyModules: [], studyMaterials: [], studyLoading: false, studyLibraryError: '',
+                studyPrograms: [], studyModules: [], studyMaterials: [], practiceResources: [], studyLoading: false, studyLibraryError: '', practiceDraft:{moduleId:'',title:'',url:'',resourceType:'practice',level:'beginner',description:'',isPublished:false},
                 adminAccount: {name:'',email:'',age:'',education:'',role:'student',loginId:'',password:'',course:defaultCourses[0].name},
                 showAdminPassword: false,
                 showAdminConfirmPassword: false,
@@ -1608,27 +1623,54 @@ try {
                 },
                 get myStudyGuides() { return this.studyGuides.filter(g=>g.program===this.currentUser.course); },
                 get myStudyModules() {
-                    return this.studyModules.filter(m => this.currentUser.role === 'student' ? m.is_published === true : true);
+                    const program=this.studyPrograms.find(p=>p.name===this.currentUser.course); return this.studyModules.filter(m => this.currentUser.role === 'student' ? (m.is_published === true && m.program_id===program?.id) : true);
                 },
                 async loadStudyLibrary() {
                     if (!supabaseClient || !this.isLoggedIn) return;
                     this.studyLoading = true; this.studyLibraryError = '';
                     try {
-                        const [programRes,moduleRes,materialRes] = await Promise.all([
+                        const [programRes,moduleRes,materialRes,resourceRes] = await Promise.all([
                             supabaseClient.from('programs').select('id,name,course_duration,total_hours,capstone,is_active').order('name'),
                             supabaseClient.from('modules').select('*, programs(name,course_duration)').order('module_order'),
-                            supabaseClient.from('study_materials').select('*').order('created_at',{ascending:false})
+                            supabaseClient.from('study_materials').select('*').order('created_at',{ascending:false}),
+                            supabaseClient.from('practice_resources').select('*').order('created_at',{ascending:false})
                         ]);
                         if (programRes.error) throw programRes.error;
                         if (moduleRes.error) throw moduleRes.error;
                         if (materialRes.error) throw materialRes.error;
+                        if (resourceRes.error) throw resourceRes.error;
                         this.studyPrograms = programRes.data || [];
                         this.studyModules = moduleRes.data || [];
                         this.studyMaterials = materialRes.data || [];
+                        this.practiceResources = resourceRes.data || [];
                     } catch (err) {
                         console.error('Study library load error:',err);
                         this.studyLibraryError = 'Course library could not be loaded. Please refresh or contact Admin.';
                     } finally { this.studyLoading = false; }
+                },
+                async savePracticeResource() {
+                    if(this.currentUser.role!=='admin'){this.showToast('Only Admin can manage practice links.','error');return;}
+                    const d=this.practiceDraft,title=d.title.trim(),url=d.url.trim();
+                    if(!d.moduleId||!title||!/^https?:\/\//i.test(url)){this.showToast('Select a module and enter a valid URL.','error');return;}
+                    const {error}=await supabaseClient.from('practice_resources').insert({module_id:d.moduleId,title,url,resource_type:d.resourceType,level:d.level,description:d.description.trim(),is_published:!!d.isPublished,created_by:this.authSession?.user?.id});
+                    if(error){console.error(error);this.showToast('Practice link could not be saved.','error');return;}
+                    this.practiceDraft={moduleId:'',title:'',url:'',resourceType:'practice',level:'beginner',description:'',isPublished:false};
+                    await this.loadStudyLibrary();this.showToast('Practice link saved successfully.');
+                },
+                async editPracticeResource(resource) {
+                    if(this.currentUser.role!=='admin')return;
+                    const title=prompt('Resource title:',resource.title);if(title===null)return;
+                    const url=prompt('Practice URL:',resource.url);if(url===null)return;
+                    if(!title.trim()||!/^https?:\/\//i.test(url.trim())){this.showToast('Enter a title and valid URL.','error');return;}
+                    const {error}=await supabaseClient.from('practice_resources').update({title:title.trim(),url:url.trim()}).eq('id',resource.id);
+                    if(error){this.showToast('Could not update practice link.','error');return;}
+                    await this.loadStudyLibrary();this.showToast('Practice link updated.');
+                },
+                async deletePracticeResource(resource) {
+                    if(this.currentUser.role!=='admin'||!confirm('Delete practice link "'+resource.title+'"?'))return;
+                    const {error}=await supabaseClient.from('practice_resources').delete().eq('id',resource.id);
+                    if(error){this.showToast('Could not delete practice link.','error');return;}
+                    await this.loadStudyLibrary();this.showToast('Practice link deleted.');
                 },
                 async toggleModulePublish(module) {
                     if (this.currentUser.role !== 'admin') return;
