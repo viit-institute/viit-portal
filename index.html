@@ -611,7 +611,14 @@
                 <div class="flex items-center space-x-3">
                     <span class="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold">
                         <i class="fa-solid fa-circle text-[8px] mr-1.5 text-emerald-400 animate-pulse"></i> Active Session
-                    </span>
+                                       </span>
+                </div>
+            </div>
+
+            <!-- STUDENT DASHBOARD -->
+            <template x-if="currentUser.role === 'student'">
+                <div class="space-y-6">
+
                     <!-- ADMIN-PUBLISHED PDF STUDY GUIDES -->
                     <div class="bg-brand-card border border-cyan-500/30 rounded-2xl p-6 shadow-xl space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-3">
