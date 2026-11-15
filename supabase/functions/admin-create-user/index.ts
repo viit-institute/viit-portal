@@ -72,10 +72,25 @@ Deno.serve(async (req) => {
     const { data: existing, error: existingError } = await adminClient
       .from("profiles")
       .select("id")
-      .or(`login_id.eq.${loginId}`)
+      .eq("login_id", loginId)
       .maybeSingle();
     if (existingError) return json({ success: false, message: "Could not validate the Login ID." }, 500);
     if (existing) return json({ success: false, message: "This Login ID is already in use." }, 409);
+
+    let programId: string | null = null;
+    if (role === "student") {
+      if (!course) return json({ success: false, message: "Please select a course for the student." }, 400);
+      const { data: program, error: programError } = await adminClient
+        .from("programs")
+        .select("id")
+        .eq("name", course)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (programError || !program) {
+        return json({ success: false, message: "Selected course was not found in the VIIT programs list." }, 400);
+      }
+      programId = program.id;
+    }
 
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email,
@@ -96,7 +111,7 @@ Deno.serve(async (req) => {
         login_id: loginId,
         role,
         phone: null,
-        program_id: null,
+        program_id: programId,
       })
       .select("id, full_name, login_id, role, phone, program_id")
       .single();
@@ -109,6 +124,19 @@ Deno.serve(async (req) => {
       }
       console.error("Profile insert error:", insertError);
       return json({ success: false, message: "Authentication user was rolled back because the VIIT profile could not be created." }, 500);
+    }
+
+    if (role === "student" && programId) {
+      const { error: enrollmentError } = await adminClient
+        .from("enrollments")
+        .insert({ student_id: createdUserId, program_id: programId, status: "active" });
+      if (enrollmentError) {
+        await adminClient.from("profiles").delete().eq("id", createdUserId);
+        await adminClient.auth.admin.deleteUser(createdUserId);
+        createdUserId = null;
+        console.error("Enrollment insert error:", enrollmentError);
+        return json({ success: false, message: "Account was rolled back because student enrollment could not be saved." }, 500);
+      }
     }
 
     return json({ success: true, message: "Account created.", profile }, 201);
