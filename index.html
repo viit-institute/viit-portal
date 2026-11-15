@@ -337,7 +337,7 @@
                                 <div class="flex items-center space-x-3 text-xs text-slate-400 mb-3">
                                     <span><i class="fa-solid fa-clock text-cyan-400 mr-1"></i><span x-text="course.duration"></span></span>
                                     <span>•</span>
-                                    <span><i class="fa-solid fa-layer-group text-amber-400 mr-1"></i><span x-text="(course.modules ? course.modules.length : 4) + ' Modules'"></span></span>
+                                    <span><i class="fa-solid fa-layer-group text-amber-400 mr-1"></i><span x-text="(course.moduleCount || 0) + ' Modules'"></span></span>
                                 </div>
                                 <p class="text-xs text-slate-300 leading-relaxed" x-text="course.description"></p>
                             </div>
@@ -879,7 +879,7 @@
                             <form @submit.prevent="uploadStudyGuide($event)" class="p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-3">
                                 <h4 class="text-sm font-bold text-rose-300">Publish PDF Study Guide</h4>
                                 <select x-model="guideUpload.program" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><template x-for="c in courses" :key="c.name"><option :value="c.name" x-text="c.name"></option></template></select>
-                                <select x-model="guideUpload.module" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="All Modules">All Modules</option><template x-for="m in (courses.find(c=>c.name===guideUpload.program)?.modules||[])" :key="m.title"><option :value="m.title" x-text="m.title"></option></template></select>
+                                <select x-model="guideUpload.module" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="All Modules">All Modules</option><template x-for="m in (studyModules.filter(m=>m.program_id===studyPrograms.find(p=>p.name===guideUpload.program)?.id))" :key="m.title"><option :value="m.title" x-text="m.title"></option></template></select>
                                 <input required x-model="guideUpload.title" placeholder="Study guide title" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm">
                                 <input required type="file" accept="application/pdf,.pdf" @change="guideUpload.file=$event.target.files[0]" class="w-full text-xs text-slate-300">
                                 <button class="w-full py-2.5 rounded-lg bg-rose-500 text-white text-sm font-extrabold">Publish PDF to selected course module</button>
@@ -898,14 +898,14 @@
                         </div>
                         <form @submit.prevent="addManualQuestion()" class="p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-3">
                             <h4 class="text-sm font-bold text-violet-300">Create Aptitude MCQ Manually</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2"><select x-model="manualQuestion.program" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><template x-for="c in courses" :key="c.name"><option :value="c.name" x-text="c.name"></option></template></select><select x-model.number="manualQuestion.module" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><template x-for="(m,i) in (courses.find(c=>c.name===manualQuestion.program)?.modules||[])" :key="i"><option :value="i" x-text="'Module '+(i+1)+' — '+m.title"></option></template></select><select x-model="manualQuestion.answer" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="A">Correct: A</option><option value="B">Correct: B</option><option value="C">Correct: C</option><option value="D">Correct: D</option></select></div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2"><select x-model="manualQuestion.program" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><template x-for="c in courses" :key="c.name"><option :value="c.name" x-text="c.name"></option></template></select><select x-model.number="manualQuestion.module" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><template x-for="(m,i) in (studyModules.filter(m=>m.program_id===studyPrograms.find(p=>p.name===manualQuestion.program)?.id))" :key="i"><option :value="i" x-text="'Module '+(i+1)+' — '+m.title"></option></template></select><select x-model="manualQuestion.answer" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="A">Correct: A</option><option value="B">Correct: B</option><option value="C">Correct: C</option><option value="D">Correct: D</option></select></div>
                             <input required x-model="manualQuestion.question" placeholder="Enter question" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><input required x-model="manualQuestion.a" placeholder="Option A" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><input required x-model="manualQuestion.b" placeholder="Option B" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><input required x-model="manualQuestion.c" placeholder="Option C" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><input required x-model="manualQuestion.d" placeholder="Option D" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
                             <button class="px-4 py-2.5 rounded-lg bg-violet-500 text-white text-sm font-bold">Add Question to Module Bank</button>
                         </form>
                         <form @submit.prevent="scheduleQuiz()" class="p-4 rounded-xl bg-slate-900 border border-slate-700 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                             <div><label class="block text-xs text-slate-300 mb-1">Program</label><select x-model="scheduleForm.program" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><template x-for="c in courses" :key="c.name"><option :value="c.name" x-text="c.name"></option></template></select></div>
-                            <div><label class="block text-xs text-slate-300 mb-1">Module</label><select x-model="scheduleForm.module" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="-1">All modules</option><template x-for="(m,i) in (courses.find(c=>c.name===scheduleForm.program)?.modules||[])" :key="i"><option :value="i" x-text="'Module '+(i+1)+' — '+m.title"></option></template></select></div>
+                            <div><label class="block text-xs text-slate-300 mb-1">Module</label><select x-model="scheduleForm.module" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><option value="-1">All modules</option><template x-for="(m,i) in (studyModules.filter(m=>m.program_id===studyPrograms.find(p=>p.name===scheduleForm.program)?.id))" :key="i"><option :value="i" x-text="'Module '+(i+1)+' — '+m.title"></option></template></select></div>
                             <div><label class="block text-xs text-slate-300 mb-1">Opens at</label><input required type="datetime-local" x-model="scheduleForm.opens" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
                             <div><label class="block text-xs text-slate-300 mb-1">Closes at</label><input required type="datetime-local" x-model="scheduleForm.closes" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"><button class="mt-2 w-full py-2.5 rounded-lg bg-amber-500 text-slate-950 text-sm font-extrabold">Schedule Aptitude Test</button></div>
                         </form>
@@ -1093,235 +1093,143 @@
                 : null;
             
             const defaultCourses = [
-                { 
-                    name: 'Basic & Tally Prime Combo Offer', 
+{ 
+                    name: 'Basic & Tally Prime Combo Offer', moduleCount: 5, 
                     category: 'Office & Accounting',
                     duration: '3 Months (Combo)', 
                     price: 14000, 
                     description: 'Special Combo Package! Master Basic Computer operations along with complete Tally Prime & GST accounting at a special bundled fee.', 
                     badge: 'COMBO OFFER',
                     isCombo: true,
-                    modules: [
-                        { title: 'Computer Fundamentals & OS', topics: 'Hardware components, Windows 11 navigation, file management, control panel, and peripheral setup.' },
-                        { title: 'Office Suite Mastery', topics: 'MS Word (formatting, mail merge, templates), MS Excel (formulas, VLOOKUP, pivot tables, charts), and MS PowerPoint (slide design, animations).' },
-                        { title: 'Internet & Digital Literacy', topics: 'Email etiquette, cloud storage (Google Drive/OneDrive), cyber safety, and online banking/digital portals.' },
-                        { title: 'Tally Prime Accounting Foundations', topics: 'Company creation, ledger & group configuration, accounting vouchers (Payment, Receipt, Contra, Journal, Sales, Purchase), and Bank Reconciliation (BRS).' },
-                        { title: 'Inventory & GST Compliance', topics: 'Stock groups/items, godown management, GST configuration (CGST, SGST, IGST), GSTR-1, GSTR-2B, GSTR-3B filing, and E-Way Bill generation.' }
-                    ],
-                    capstone: 'End-to-end financial year bookkeeping, inventory tracking, and GST return preparation for a simulated retail/trading enterprise.'
-                },
-                { 
-                    name: 'Basic Computer Course', 
+                    
+                    },
+{ 
+                    name: 'Basic Computer Course', moduleCount: 4, 
                     category: 'Office & Accounting',
                     duration: '2 Months', 
                     price: 6000, 
                     description: 'Fundamental computer skills, operating systems, internet usage, and typing.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Introduction to Computing', topics: 'Computer architecture, input/output devices, memory units, and operating system basics.' },
-                        { title: 'Windows & File Operations', topics: 'Desktop customization, directory structures, shortcut keys, and system utilities.' },
-                        { title: 'Essential Office Applications', topics: 'Document drafting in Word, basic spreadsheet calculations in Excel, and creating presentations in PowerPoint.' },
-                        { title: 'Internet & Communication', topics: 'Web browsers, search techniques, email creation/management, and basic online security.' }
-                    ],
-                    capstone: 'Creating a formatted business report, an expense tracker spreadsheet, and a 5-slide presentation.'
-                },
-                { 
-                    name: 'Advanced Computer Course', 
+                    
+                    },
+{ 
+                    name: 'Advanced Computer Course', moduleCount: 4, 
                     category: 'Office & Accounting',
                     duration: '3 Months', 
                     price: 10000, 
                     description: 'Advanced PC operations, troubleshooting, software installation, and utilities.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Advanced Operating Systems & Troubleshooting', topics: 'System configuration, disk management, software installation, and basic hardware/network diagnostics.' },
-                        { title: 'Advanced Office Productivity', topics: 'Complex Word documents (tables of contents, macros), advanced Excel functions, and dynamic PowerPoint decks.' },
-                        { title: 'Database & Web Basics', topics: 'Introduction to MS Access/SQL concepts, HTML5/CSS3 fundamentals, and cloud collaboration tools.' },
-                        { title: 'Digital Security & Productivity Tools', topics: 'Antivirus management, data backup strategies, PDF editing, and remote desktop workflows.' }
-                    ],
-                    capstone: 'Building an automated office workflow combining linked Excel databases, mail-merged Word notices, and a web-ready summary page.'
-                },
-                { 
-                    name: 'MS Office', 
+                    
+                    },
+{ 
+                    name: 'MS Office', moduleCount: 4, 
                     category: 'Office & Accounting',
                     duration: '1 Month', 
                     price: 4000, 
                     description: 'Master Word, Excel, PowerPoint, and Outlook for professional workplaces.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Microsoft Word', topics: 'Page layout, styles, headers/footers, tables, track changes, and mail merge.' },
-                        { title: 'Microsoft Excel', topics: 'Cell referencing, logical functions (IF, AND, OR), lookup functions, conditional formatting, and charts.' },
-                        { title: 'Microsoft PowerPoint', topics: 'Master slides, transitions, custom animations, multimedia embedding, and presenter view.' },
-                        { title: 'Microsoft Outlook', topics: 'Email organization, calendar scheduling, task management, and rules/filters.' }
-                    ],
-                    capstone: 'Complete corporate pitch package including a proposal document, financial budget sheet, and executive presentation.'
-                },
-                { 
-                    name: 'Advanced Excel', 
+                    
+                    },
+{ 
+                    name: 'Advanced Excel', moduleCount: 4, 
                     category: 'Office & Accounting',
                     duration: '1 Month', 
                     price: 5000, 
                     description: 'VLOOKUP, Pivot Tables, Macros, VBA, and advanced data visualization.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Advanced Formulas & Functions', topics: 'XLOOKUP, INDEX-MATCH, SUMIFS, COUNTIFS, dynamic arrays, and nested text/date formulas.' },
-                        { title: 'Data Cleaning & Validation', topics: 'Power Query basics, text-to-columns, duplicate removal, and custom data validation rules.' },
-                        { title: 'Data Analysis & Visualization', topics: 'Pivot Tables, Pivot Charts, Slicers, Timelines, What-If Analysis (Goal Seek, Scenario Manager), and KPI dashboards.' },
-                        { title: 'Automation Basics', topics: 'Recording and editing simple VBA Macros to automate repetitive formatting and reporting tasks.' }
-                    ],
-                    capstone: 'Interactive Sales & Inventory MIS Dashboard with dynamic slicers and automated variance calculations.'
-                },
-                { 
-                    name: 'Tally with GST', 
+                    
+                    },
+{ 
+                    name: 'Tally with GST', moduleCount: 5, 
                     category: 'Office & Accounting',
                     duration: '2 Months', 
                     price: 8000, 
                     description: 'Comprehensive accounting, inventory management, GST compliance, and taxation.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Accounting Principles & Tally Setup', topics: 'Golden rules of accounting, company setup, security controls, and chart of accounts.' },
-                        { title: 'Voucher Entry & Daybook Management', topics: 'Multi-currency accounting, cost centers, bill-wise details, and credit limits.' },
-                        { title: 'Inventory & Order Processing', topics: 'Purchase/Sales order processing, batch-wise details, manufacturing journals, and reorder levels.' },
-                        { title: 'Taxation (GST & TDS)', topics: 'GST setup at company/stock level, RCM (Reverse Charge Mechanism), E-Invoicing, GSTR reports, and TDS deduction/payment.' },
-                        { title: 'Payroll & MIS Reports', topics: 'Employee creation, attendance/pay heads, Balance Sheet, Profit & Loss A/c, and Ratio Analysis.' }
-                    ],
-                    capstone: 'Complete GST-compliant accounting cycle with balance sheet finalization and statutory return reconciliation.'
-                },
-                { 
-                    name: 'Python Programming', 
+                    
+                    },
+{ 
+                    name: 'Python Programming', moduleCount: 4, 
                     category: 'Programming & DB',
                     duration: '3 Months', 
                     price: 18000, 
                     description: 'Core Python, OOPs, data structures, and mini project development.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Python Core & Data Structures', topics: 'Variables, data types, control flow, loops, functions, lists, tuples, dictionaries, and sets.' },
-                        { title: 'Object-Oriented Programming (OOP)', topics: 'Classes, objects, inheritance, polymorphism, encapsulation, and modules/packages.' },
-                        { title: 'File Handling & Error Management', topics: 'Reading/writing CSV/JSON/TXT files, exception handling (try-except), and regular expressions.' },
-                        { title: 'Libraries & Database Connectivity', topics: 'Introduction to NumPy, Pandas, API requests (requests), and SQLite/MySQL integration.' }
-                    ],
-                    capstone: 'Command-line or GUI-based Inventory & Billing Management System backed by a relational database.'
-                },
-                { 
-                    name: 'Java Programming', 
+                    
+                    },
+{ 
+                    name: 'Java Programming', moduleCount: 4, 
                     category: 'Programming & DB',
                     duration: '4 Months', 
                     price: 22000, 
                     description: 'Java SE, OOP concepts, collections, exception handling, and database connectivity.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Core Java Fundamentals', topics: 'JVM architecture, data types, operators, control statements, arrays, and string handling.' },
-                        { title: 'OOP Concepts in Depth', topics: 'Constructors, inheritance, interfaces, abstract classes, packages, and access modifiers.' },
-                        { title: 'Exception Handling & Collections Framework', topics: 'Custom exceptions, multithreading basics, ArrayList, HashMap, HashSet, and Iterators.' },
-                        { title: 'File I/O & JDBC', topics: 'Byte/character streams, serialization, and connecting Java applications to relational databases via JDBC.' }
-                    ],
-                    capstone: 'Multi-user Student or Banking Management System utilizing Java Collections and JDBC persistence.'
-                },
-                { 
-                    name: 'PL/SQL & Oracle', 
+                    
+                    },
+{ 
+                    name: 'PL/SQL & Oracle', moduleCount: 4, 
                     category: 'Programming & DB',
                     duration: '3 Months', 
                     price: 20000, 
                     description: 'Relational databases, SQL queries, procedures, triggers, and Oracle architecture.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Relational Database & SQL Foundations', topics: 'RDBMS concepts, normalization, DDL, DML, DCL, TCL, joins, subqueries, and views.' },
-                        { title: 'PL/SQL Block Structure', topics: 'Variables, data types, conditional logic, loops, and anchored declarations (%TYPE, %ROWTYPE).' },
-                        { title: 'Cursors & Exception Handling', topics: 'Implicit and explicit cursors, cursor FOR loops, predefined and user-defined exceptions.' },
-                        { title: 'Subprograms & Triggers', topics: 'Stored procedures, functions, packages, database triggers, and query performance tuning basics.' }
-                    ],
-                    capstone: 'Automated Enterprise Payroll & Audit Logging Engine implemented via Oracle stored procedures and triggers.'
-                },
-                { 
-                    name: 'Networking', 
+                    
+                    },
+{ 
+                    name: 'Networking', moduleCount: 4, 
                     category: 'Infrastructure & Cloud',
                     duration: '3 Months', 
                     price: 25000, 
                     description: 'LAN/WAN, router configuration, IP addressing, and network security fundamentals.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Network Fundamentals', topics: 'OSI & TCP/IP models, network topologies, cabling standards (crimping/testing), and network devices.' },
-                        { title: 'IP Addressing & Subnetting', topics: 'IPv4/IPv6 addressing, CIDR notation, VLSM subnetting, DHCP, and DNS configuration.' },
-                        { title: 'Switching & Routing', topics: 'VLANs, trunking, Spanning Tree Protocol (STP), static routing, and dynamic routing protocols (OSPF, RIP).' },
-                        { title: 'Network Security & Troubleshooting', topics: 'Access Control Lists (ACLs), NAT/PAT, firewall basics, wireless security, and diagnostic tools (ping, traceroute, Wireshark).' }
-                    ],
-                    capstone: 'Designing and simulating a multi-department enterprise network topology with VLAN segmentation and secure internet routing.'
-                },
-                { 
-                    name: 'Cloud Computing (AWS)', 
+                    
+                    },
+{ 
+                    name: 'Cloud Computing (AWS)', moduleCount: 4, 
                     category: 'Infrastructure & Cloud',
                     duration: '3 Months', 
                     price: 30000, 
                     description: 'Amazon Web Services EC2, S3, IAM, VPC, and cloud deployment basics.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Cloud Concepts & IAM', topics: 'Cloud service models (IaaS, PaaS, SaaS), AWS global infrastructure, Identity and Access Management (IAM) users, roles, and policies.' },
-                        { title: 'Compute & Networking', topics: 'Amazon EC2 instances, AMI creation, Auto Scaling, Elastic Load Balancing (ELB), and Virtual Private Cloud (VPC) architecture.' },
-                        { title: 'Storage & Databases', topics: 'Amazon S3 buckets/lifecycle policies, EBS, EFS, Amazon RDS, and DynamoDB fundamentals.' },
-                        { title: 'Monitoring, Security & Serverless', topics: 'CloudWatch metrics/alarms, AWS Lambda basics, security groups, NACLs, and billing/cost optimization.' }
-                    ],
-                    capstone: 'Deploying a fault-tolerant, auto-scaling web application inside a custom VPC with S3 static asset hosting and an RDS backend.'
-                },
-                { 
-                    name: 'ERP / SAP', 
+                    
+                    },
+{ 
+                    name: 'ERP / SAP', moduleCount: 4, 
                     category: 'Infrastructure & Cloud',
                     duration: '3 Months', 
                     price: 28000, 
                     description: 'Enterprise Resource Planning overview and SAP module navigation.', 
                     badge: 'NEW',
-                    modules: [
-                        { title: 'ERP Fundamentals & SAP Navigation', topics: 'Enterprise resource planning architecture, SAP GUI/Fiori interface, organizational structures, and master data concepts.' },
-                        { title: 'Financial & Controlling Overview (FI/CO)', topics: 'General ledger structure, accounts payable/receivable integration, and cost center accounting basics.' },
-                        { title: 'Materials Management (MM) & Procurement', topics: 'Procure-to-Pay (P2P) cycle, material master, vendor master, purchase requisitions, POs, and goods receipt.' },
-                        { title: 'Sales & Distribution (SD) & Reporting', topics: 'Order-to-Cash (O2C) cycle, customer master, sales orders, delivery processing, billing, and standard ERP reporting.' }
-                    ],
-                    capstone: 'Executing full end-to-end Procure-to-Pay and Order-to-Cash business scenarios with integrated financial postings.'
-                },
-                { 
-                    name: 'Graphic Design', 
+                    
+                    },
+{ 
+                    name: 'Graphic Design', moduleCount: 4, 
                     category: 'Design & CAD',
                     duration: '3 Months', 
                     price: 15000, 
                     description: 'Photoshop, Illustrator, CorelDRAW, branding, and digital creative layouts.', 
                     badge: 'CERTIFIED',
-                    modules: [
-                        { title: 'Design Principles & Typography', topics: 'Color theory, layout composition, grid systems, font pairing, and visual hierarchy.' },
-                        { title: 'Raster Graphics & Photo Manipulation (Adobe Photoshop)', topics: 'Layers, masking, retouching, color correction, compositing, and social media creatives.' },
-                        { title: 'Vector Illustration & Branding (Adobe Illustrator / CorelDRAW)', topics: 'Pen tool mastery, logo design, vector icons, typography art, and packaging layouts.' },
-                        { title: 'Print & Digital Production', topics: 'CMYK vs. RGB workflows, bleed/margin setup, brochure/flyer layout, and exporting assets for web and print.' }
-                    ],
-                    capstone: 'Complete Brand Identity Kit (Logo, Business Card, Brochure, and Social Media Campaign Banners).'
-                },
-                { 
-                    name: 'AutoCAD', 
+                    
+                    },
+{ 
+                    name: 'AutoCAD', moduleCount: 4, 
                     category: 'Design & CAD',
                     duration: '2 Months', 
                     price: 12000, 
                     description: '2D/3D drafting, architectural designs, and engineering blueprints.', 
                     badge: 'NEW',
-                    modules: [
-                        { title: 'Workspace & 2D Drafting Tools', topics: 'Coordinate systems, precision drawing (Ortho, Polar, Object Snap), lines, polylines, circles, arcs, and hatching.' },
-                        { title: 'Editing, Layers & Blocks', topics: 'Trim, extend, offset, array, mirror, layer management, line weights, and creating reusable blocks/attributes.' },
-                        { title: 'Annotation & Dimensioning', topics: 'Text styles, dimension styles, leaders, tables, and scale management.' },
-                        { title: 'Layouts, Isometric & 3D Basics', topics: 'Paper space vs. model space, viewports, plotting/printing to PDF, isometric drafting, and basic 3D solid modeling.' }
-                    ],
-                    capstone: 'Detailed 2D Architectural Floor Plan or Mechanical Assembly Drawing with layered annotations and print-ready title block layouts.'
-                },
-                {
-                    name: 'Desktop Support',
+                    
+                    },
+{
+                    name: 'Desktop Support', moduleCount: 4,
                     category: 'Office & IT Support',
                     duration: '2 Months',
                     price: 8000,
                     description: 'Practical training in computer hardware, Windows support, software installation, troubleshooting, networking, and end-user assistance.',
                     badge: 'NEW',
-                    modules: [
-                        { title: 'Computer Hardware & Peripherals', topics: 'Identify motherboard, CPU, RAM, storage devices, ports, printers, scanners, keyboards, mice, and basic component replacement.' },
-                        { title: 'Operating Systems & Software Support', topics: 'Install and configure Windows, manage users and permissions, drivers, updates, applications, backups, restore points, and system utilities.' },
-                        { title: 'Troubleshooting & Help Desk', topics: 'Diagnose boot failures, slow systems, application errors, printer issues, malware symptoms, ticket logging, incident prioritization, and remote support etiquette.' },
-                        { title: 'Networking & IT Security Basics', topics: 'IP address, DNS, DHCP, router and switch basics, Wi-Fi troubleshooting, LAN connectivity, antivirus, firewall, password hygiene, phishing awareness, and data protection.' }
-                    ],
-                    capstone: 'Complete a desktop-support practical: assemble/check a workstation, install Windows and drivers, configure a printer and network connection, resolve sample faults, and document a help-desk ticket.'
-                }
-            ];
+                    
+                    }
+            ;
 
             return {
                 activeView: 'landing',
@@ -1398,7 +1306,7 @@
                     try {
                         const savedCourses = localStorage.getItem('viit_courses_v3');
                         if (savedCourses) {
-                            this.courses = JSON.parse(savedCourses);
+                            this.courses = JSON.parse(savedCourses).map(({modules,capstone,...course})=>({...course,moduleCount:modules?.length||course.moduleCount||0}));
                             // Keep newly added catalogue programs available for existing browsers too.
                             defaultCourses.forEach(course => {
                                 if (!this.courses.some(existing => existing.name === course.name)) this.courses.push(course);
@@ -1519,7 +1427,7 @@ try {
                     this.studyLoading = true; this.studyLibraryError = '';
                     try {
                         const [programRes,moduleRes,materialRes] = await Promise.all([
-                            supabaseClient.from('programs').select('id,name,course_duration,is_active').order('name'),
+                            supabaseClient.from('programs').select('id,name,course_duration,capstone,is_active').order('name'),
                             supabaseClient.from('modules').select('*, programs(name,course_duration)').order('module_order'),
                             supabaseClient.from('study_materials').select('*').order('created_at',{ascending:false})
                         ]);
@@ -1685,12 +1593,14 @@ try {
                         const matchesCat = this.selectedCategory === 'All' || c.category === this.selectedCategory;
                         if (!this.searchQuery) return matchesCat;
                         const q = this.searchQuery.toLowerCase();
-                        const modMatch = (c.modules || []).some(m => m.title.toLowerCase().includes(q) || m.topics.toLowerCase().includes(q));
-                        return matchesCat && (c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q) || modMatch);
+                        return matchesCat && (c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q));
                     });
                 },
                 get currentUserCourseObj() {
-                    return this.courses.find(c => c.name === this.currentUser.course) || this.courses[0];
+                    const course=this.courses.find(c=>c.name===this.currentUser.course)||this.courses[0];
+                    const program=this.studyPrograms.find(p=>p.name===course?.name);
+                    const modules=this.studyModules.filter(m=>m.program_id===program?.id).map(m=>({title:m.title,topics:m.description||''}));
+                    return {...course,modules};
                 },
                 get studentProgressPercent() {
                     const mods = this.currentUserCourseObj.modules || [];
@@ -1708,7 +1618,13 @@ try {
                     this.saveState();
                 },
                 openSyllabusModal(course) {
-                    this.selectedSyllabusCourse = course;
+                    if(!this.isLoggedIn || this.currentUser.role!=='admin'){
+                        this.showToast('Detailed syllabus is available only to Admin. Students can read their own published course after login.','error');
+                        return;
+                    }
+                    const program=this.studyPrograms.find(p=>p.name===course.name);
+                    const modules=this.studyModules.filter(m=>m.program_id===program?.id).map(m=>({title:m.title,topics:m.description||''}));
+                    this.selectedSyllabusCourse={...course,modules,capstone:program?.capstone||''};
                     this.syllabusModalOpen = true;
                 },
                 openSyllabusByName(courseName) {
@@ -1933,7 +1849,7 @@ async handleLogin() {
                 },
                 getAttempts(program,moduleIndex=0) { return this.quizResults.filter(r=>r.studentId===this.studentIdForCurrentUser&&r.program===program&&Number(r.moduleIndex||0)===Number(moduleIndex)).length; },
                 buildAutoQuestions(program,moduleIndex=0,count=25) {
-                    const course=this.courses.find(c=>c.name===program)||this.courses[0];const mod=(course.modules||[])[moduleIndex]||{title:course.name,topics:course.description};
+                    const course=this.courses.find(c=>c.name===program)||this.courses[0];const moduleRows=this.studyModules.filter(m=>m.program_id===this.studyPrograms.find(p=>p.name===program)?.id);const mod=moduleRows[moduleIndex]||{title:course.name,description:course.description};mod.topics=mod.description||course.description;
                     const topic=(mod.title+' '+mod.topics).split(/[.,;:()]/)[0].trim()||course.name;const qs=[];
                     const templates=[
                       {question:`Which is the main learning focus of ${mod.title}?`,options:[topic,'Unrelated entertainment','Avoiding all documentation','None of these'],answer:0},
