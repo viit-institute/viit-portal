@@ -2072,6 +2072,8 @@ async handleLogin() {
                 }
             };
         }
+        // Explicitly expose the Alpine data factory on the global window object.
+        window.viitPortal = viitPortal;
     </script>
 </body>
 </html>
