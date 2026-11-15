@@ -60,12 +60,16 @@ Deno.serve(async (req) => {
     const password = String(body.password || "");
     const role = String(body.role || "");
     const course = body.course == null ? null : String(body.course).trim();
+    const age = body.age == null || body.age === "" ? null : Number(body.age);
+    const education = body.education == null ? null : String(body.education).trim();
 
     if (!fullName || fullName.length > 120 ||
         !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
         !/^[a-z0-9._-]{3,50}$/.test(loginId) ||
         password.length < 8 || password.length > 128 ||
-        !["student", "staff"].includes(role)) {
+        !["student", "staff"].includes(role) ||
+        (age !== null && (!Number.isInteger(age) || age < 10 || age > 100)) ||
+        (education !== null && education.length > 120)) {
       return json({ success: false, message: "Please check the account details. Login ID must be 3-50 valid characters and password at least 8 characters." }, 400);
     }
 
@@ -78,8 +82,8 @@ Deno.serve(async (req) => {
     if (existing) return json({ success: false, message: "This Login ID is already in use." }, 409);
 
     let programId: string | null = null;
-    if (role === "student") {
-      if (!course) return json({ success: false, message: "Please select a course for the student." }, 400);
+    if (role === "student" || role === "staff") {
+      if (!course) return json({ success: false, message: "Please select a course for this account." }, 400);
       const { data: program, error: programError } = await adminClient
         .from("programs")
         .select("id")
@@ -136,6 +140,19 @@ Deno.serve(async (req) => {
         createdUserId = null;
         console.error("Enrollment insert error:", enrollmentError);
         return json({ success: false, message: "Account was rolled back because student enrollment could not be saved." }, 500);
+      }
+    }
+
+    if (role === "staff" && programId) {
+      const { error: assignmentError } = await adminClient
+        .from("staff_course_assignments")
+        .insert({ staff_id: createdUserId, program_id: programId, assigned_by: callerData.user.id });
+      if (assignmentError) {
+        await adminClient.from("profiles").delete().eq("id", createdUserId);
+        await adminClient.auth.admin.deleteUser(createdUserId);
+        createdUserId = null;
+        console.error("Staff course assignment error:", assignmentError);
+        return json({ success: false, message: "Account was rolled back because staff course assignment could not be saved." }, 500);
       }
     }
 
